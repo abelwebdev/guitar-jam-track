@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Artist {
+  id             Int            @id @default(autoincrement())
+  artist_name    String?        @unique
+  highlighted    Boolean?
+  backing_tracks BackingTrack[]
+}
+
+model BackingTrack {
+  id          Int             @id @default(autoincrement())
+  artist_id   Int?
+  track_title String?
+  track_url   String?
+  artist      Artist?         @relation(fields: [artist_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  playlists   PlaylistTrack[]
+}
+
+model Users {
+  id               Int        @id @default(autoincrement())
+  firebase_user_id String?    @unique @db.VarChar(255)
+  email            String?    @unique @db.VarChar(255)
+  img              String?
+  username         String?    @unique @db.VarChar(50)
+  first_name       String?    @db.VarChar(20)
+  last_name        String?    @db.VarChar(20)
+  created_at       DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?  @db.Timestamp(6)
+  playlists        Playlist[]
+}
+
+model Playlist {
+  id             Int             @id @default(autoincrement())
+  userId         Int?
+  name           String?
+  createdAt      DateTime        @default(now()) @db.Timestamp(6)
+  user           Users?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playlistTracks PlaylistTrack[]
+}
+
+model PlaylistTrack {
+  id         Int          @id @default(autoincrement())
+  playlistId Int
+  trackId    Int
+  playlist   Playlist     @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  track      BackingTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistId, trackId])
+}
