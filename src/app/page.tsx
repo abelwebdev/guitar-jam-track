@@ -1,42 +1,216 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Menu, X, Heart } from "lucide-react";
+import {
+  Mic2, Play, Sparkles, Zap, Music, ChevronRight, Star, Menu, X, 
+  Hash, Grid, Gauge, Activity, Clock, Trophy, ListMusic, Brain, Heart,
+  Search, Filter, Sun, Moon, Users, ArrowLeft, Pause, Volume2, 
+  ShieldCheck, Headset, Download, VolumeX
+} from 'lucide-react';
+import { Genre, BackingTrack } from '../types/types';
 import { useGetHighlightedArtistsQuery } from "@/services/api";
 import { auth } from "@/lib/firebaseClient";
 import { useRouter } from "next/navigation";
 
+type LandingView = 'home' | 'tracks' | 'artists';
+
+const FeatureCard: React.FC<{ icon: React.ReactNode, title: string, desc: string, color?: string }> = ({ icon, title, desc, color = "indigo" }) => (
+  <div className="p-6 md:p-8 rounded-[2rem] bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 transition-all group relative overflow-hidden text-left shadow-sm">
+    <div className={`absolute top-0 right-0 w-32 h-32 bg-${color}-500/5 blur-[50px] rounded-full -mr-16 -mt-16`} />
+    <div className={`w-12 h-12 rounded-2xl bg-${color}-600/10 flex items-center justify-center text-${color}-500 mb-6 group-hover:scale-110 transition-transform relative z-10`}>
+      {icon}
+    </div>
+    <h3 className="text-lg md:text-xl font-bold text-zinc-900 dark:text-white mb-3 relative z-10">{title}</h3>
+    <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed relative z-10">{desc}</p>
+  </div>
+);
+
+const ToolkitItem: React.FC<{ icon: React.ReactNode, name: string, active?: boolean, onActivate: () => void }> = ({ icon, name, active, onActivate }) => (
+  <div 
+    onMouseEnter={onActivate}
+    onClick={onActivate}
+    className={`flex items-center space-x-3 p-4 rounded-2xl border transition-all cursor-pointer ${active ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/20' : 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700'}`}
+  >
+    {icon}
+    <span className="text-xs font-black uppercase tracking-widest">{name}</span>
+  </div>
+);
+
+const ArtistCard: React.FC<{ id: number, name: string | null, trackCount: number, image: string | null }> = ({ id, name, trackCount, image }) => (
+  <Link href={`/artist/${encodeURIComponent(
+    (name ?? "").replace(/\s+/g, "_")
+    )}?id=${id}`} className="group relative rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 transition-all duration-500 text-left shadow-md cursor-pointer">
+    <div className="aspect-[4/5] overflow-hidden relative">
+      <Image
+        src={image || '/background-placeholder.jpg'}
+        alt={name ?? "Artist"}
+        fill
+        className="object-cover transition-transform duration-300 group-hover:scale-105"
+        priority={false}
+      />
+    </div>
+    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent p-6 flex flex-col justify-end">
+      <h4 className="text-xl font-black text-white leading-tight">{name ?? 'Unknown Artist'}</h4>
+      <p className="text-white/80 text-sm mb-4">{trackCount} tracks</p>
+      <div className="flex items-center justify-between">
+        <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-indigo-600 transition-colors">
+          <ChevronRight size={14} className="text-white" />
+        </div>
+      </div>
+    </div>
+  </Link>
+);
+
+const TrackPreviewRow: React.FC<{ 
+  track: BackingTrack, 
+  isPlaying: boolean, 
+  onPlay: (track: BackingTrack) => void
+}> = ({ track, isPlaying, onPlay }) => (
+  <div onClick={() => onPlay(track)} className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
+    <div className="flex items-center space-x-4">
+      <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
+        <Image src={track.coverUrl} className="w-full h-full object-cover" alt="" />
+        <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
+          {isPlaying ? <Pause size={16} fill="white" className="text-white" /> : <Play size={16} fill="white" className="text-white ml-0.5" />}
+        </div>
+      </div>
+      <div className="text-left">
+        <h4 className={`text-sm font-bold mb-0.5 ${isPlaying ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'}`}>{track.title}</h4>
+        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{track.artist}</p>
+      </div>
+    </div>
+    <div className="flex items-center space-x-6">
+      <div className="hidden sm:flex items-center space-x-2">
+        <span className="px-2 py-0.5 rounded-md bg-zinc-200 dark:bg-zinc-800 text-[9px] font-black text-zinc-500 border border-zinc-300 dark:border-zinc-700">{track.key}</span>
+        <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 uppercase">{track.bpm} BPM</span>
+      </div>
+      <button className={`text-[10px] font-black uppercase tracking-widest transition-opacity ${isPlaying ? 'text-indigo-600 dark:text-indigo-400 opacity-100' : 'text-zinc-400 group-hover:text-indigo-600 opacity-0 group-hover:opacity-100'}`}>
+        {isPlaying ? 'Playing' : 'Listen'}
+      </button>
+    </div>
+  </div>
+);
+
+
 export default function Header() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  // const [loading, setLoading] = useState(true); // wait for auth check
-  // const [user, setUser ] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const { data: artists, isLoading, error } = useGetHighlightedArtistsQuery();
+  // Landing page state
+  const [activeView, setActiveView] = useState<LandingView>('home');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeToolkit, setActiveToolkit] = useState<'Metronome' | 'Tuner' | 'Chord Map' | 'Scales'>('Scales');
+  const [tick, setTick] = useState(0);
+
+  const [trackSearch, setTrackSearch] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState<Genre | 'All'>('All');
+  const [selectedArtistName, setSelectedArtistName] = useState<string | null>(null);
+
   const [page, setPage] = useState(1);
   const [artistImages, setArtistImages] = useState<Record<number, string | null>>({});
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const { data: artists, isLoading, error } = useGetHighlightedArtistsQuery();
   const fetchedIdsRef = useRef<Set<number>>(new Set());
   const safeArtists = artists ?? [];
-  const pageSize = 8;
+  const pageSize = 6;
   const totalPages = Math.max(1, Math.ceil(safeArtists.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const start = (currentPage - 1) * pageSize;
   const end = start + pageSize;
   const visible = safeArtists.slice(start, end);
 
+  // Pagination handlers
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
 
+  // Landing Player State
+  const [previewTrack, setPreviewTrack] = useState<BackingTrack | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(0.8);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Ensure component is mounted before using theme
   useEffect(() => {
-    setIsClient(true);
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (activeToolkit === 'Metronome') {
+      const interval = setInterval(() => {
+        setTick(prev => (prev + 1) % 4);
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [activeToolkit]);
+
+  const handleNav = (view: LandingView) => {
+    setActiveView(view);
+    setSelectedArtistName(null);
+    setIsMobileMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePreviewPlay = (track: BackingTrack) => {
+    if (previewTrack?.id === track.id) {
+      setIsPlaying(!isPlaying);
+    } else {
+      setPreviewTrack(track);
+      setIsPlaying(true);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+  };
+
+  const handleDownload = () => {
+    if (previewTrack) {
+      window.open(previewTrack.audioUrl, '_blank');
+    }
+  };
+
+  const onTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
+      if (isPlaying) {
+        audioRef.current.play().catch(() => setIsPlaying(false));
+      } else {
+        audioRef.current.pause();
+      }
+    }
+  }, [isPlaying, previewTrack]);
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     const fetchImageFor = async (artistId: number, name: string | null) => {
@@ -60,291 +234,656 @@ export default function Header() {
     visible.forEach((a) => fetchImageFor(a.id, a.name ?? null));
   }, [visible]);
 
-  // useEffect(() => {
-  //   const unsubscribe = auth.onAuthStateChanged((user) => {
-  //     if (user) {
-  //       setUser(true)
-  //     } else {
-  //       setLoading(false);
-  //       setUser(false)
-  //     }
-  //   });
-
-  //   return () => unsubscribe();
-  // }, [router]);
-
-  if (error || safeArtists.length === 0) return null;
-
   return (
     <>
-      <header className="absolute top-0 left-0 right-0 flex py-4 px-4 sm:px-6 bg-transparent min-h-[75px] tracking-wide z-10">
-        <div className="flex flex-wrap items-center gap-5 w-full max-w-screen-xl mx-auto">
+      <div className="min-h-screen transition-colors duration-300 bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 selection:bg-indigo-500/30 font-sans relative">
+        <audio 
+          ref={audioRef} 
+          src={previewTrack?.audioUrl} 
+          onTimeUpdate={onTimeUpdate}
+          onEnded={() => setIsPlaying(false)}
+        />
+      
+        {/* Navigation */}
+        <nav className="fixed top-0 left-0 right-0 z-[100] px-6 md:px-12 py-5 flex items-center justify-between backdrop-blur-xl bg-white/70 dark:bg-black/40 border-b border-zinc-200 dark:border-white/5 transition-all">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 text-xl font-bold hover:opacity-80">
+          <div className="flex items-center space-x-3 cursor-pointer">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center ">
+              <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+                <Image
+                  src="/guitar-jam-track.png"
+                  alt="Guitar JamTrack Logo"
+                  width={32}
+                  height={32}
+                  priority
+                  className="h-8 w-8 brightness-0 dark:brightness-100 dark:invert"
+                />
+              </Link>
+            </div>
+            <span className="text-lg sm:text-xl font-black tracking-tighter uppercase text-zinc-900 dark:text-white">
+              Guitar JamTrack
+            </span>
+          </div>
+
+          {/* Desktop menu */}
+          <div className="hidden md:flex items-center space-x-10">
+            <div className="flex items-center space-x-8">
+              <Link
+                href="/tracks"
+                className="relative text-zinc-900 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-400 font-medium text-[15px]
+                transition-colors duration-200 after:content-[''] after:absolute after:left-0 
+                after:-bottom-1 after:w-0 after:h-[2px] after:bg-indigo-500 dark:after:bg-indigo-400
+                hover:after:w-full after:transition-all after:duration-300"
+              >
+                Tracks
+              </Link>
+
+              <Link
+                href="/artists"
+                className="relative text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 font-medium text-[15px]
+                transition-colors duration-200 after:content-[''] after:absolute after:left-0 
+                after:-bottom-1 after:w-0 after:h-[2px] after:bg-indigo-500 dark:after:bg-indigo-400
+                hover:after:w-full after:transition-all after:duration-300"
+              >
+                Artists
+              </Link>
+            </div>
+
+            <div className="flex items-center space-x-4 border-l border-zinc-200 dark:border-zinc-800 pl-10">
+              {/* Theme toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-zinc-600 dark:text-zinc-300"
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+              </Button>
+
+              {/* Get started (primary button) */}
+              <Link href="/sign-in" className="bg-indigo-600 dark:bg-indigo-500 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20">
+                Get Started
+              </Link>
+            </div>
+          </div>
+
+          {/* Mobile menu */}
+          <div className="md:hidden flex items-center space-x-3">
+            {/* Theme toggle */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (mounted && setTheme) {
+                  console.log('Theme toggle clicked, current theme:', theme);
+                  setTheme(theme === "dark" ? "light" : "dark");
+                }
+              }}
+              className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition-all duration-200 relative z-50 touch-manipulation hover:scale-110 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg hover:shadow-zinc-200/50 dark:hover:shadow-zinc-800/50 active:scale-95 group"
+              aria-label="Toggle theme"
+            >
+              <div className="transition-all duration-300 group-hover:rotate-12 group-hover:scale-110">
+                {mounted ? (
+                  theme === "dark" ? (
+                    <Sun size={18} className="animate-in spin-in-180 duration-300" />
+                  ) : (
+                    <Moon size={18} className="animate-in spin-in-180 duration-300" />
+                  )
+                ) : (
+                  <div className="w-[18px] h-[18px]" /> // Placeholder to prevent layout shift
+                )}
+              </div>
+            </button>
+            {/* Menu toggle */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Menu toggle clicked, current state:', isMobileMenuOpen);
+                setIsMobileMenuOpen(!isMobileMenuOpen);
+              }}
+              className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition-all duration-200 relative z-50 touch-manipulation hover:scale-110 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg hover:shadow-zinc-200/50 dark:hover:shadow-zinc-800/50 active:scale-95 group"
+              aria-label="Toggle menu"
+            >
+              <div className="transition-all duration-300 group-hover:scale-110">
+                {isMobileMenuOpen ? (
+                  <X size={20} className="animate-in spin-in-90 duration-200 group-hover:rotate-90" />
+                ) : (
+                  <Menu size={20} className="animate-in fade-in duration-200 group-hover:text-indigo-400" />
+                )}
+              </div>
+            </button>
+          </div>
+        </nav>
+
+        {/* Mobile Menu Overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 z-[99] bg-white dark:bg-black p-8 pt-32 flex flex-col space-y-8 md:hidden animate-in fade-in slide-in-from-top-4 duration-300"
+            onClick={(e) => {
+              // Close menu when clicking on the overlay background
+              if (e.target === e.currentTarget) {
+                setIsMobileMenuOpen(false);
+              }
+            }}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="absolute top-6 right-6 p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors animate-in fade-in duration-500 delay-100"
+              aria-label="Close menu"
+            >
+              <X size={24} />
+            </button>
+            
+            <Link 
+              href="/tracks"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`text-2xl font-black uppercase tracking-tighter text-left transition-all hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-150 relative group px-4 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:shadow-lg hover:shadow-indigo-500/10 ${
+                activeView === "tracks" 
+                  ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30" 
+                  : "text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400"
+              }`}
+            >
+              <span className="relative z-10">Tracks</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+            </Link>
+            <Link 
+              href="/artists"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-200 relative group px-4 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:shadow-lg hover:shadow-indigo-500/10 ${
+                activeView === "artists" 
+                  ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30" 
+                  : "text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400"
+              }`}
+            >
+              <span className="relative z-10">Artists</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+            </Link>
+            <Link
+              href="/sign-in"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="bg-indigo-600 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 hover:scale-105 transition-all duration-200 text-center animate-in slide-in-from-bottom-4 fade-in duration-400 delay-300 shadow-lg hover:shadow-xl"
+            >
+              Get Started
+            </Link>
+          </div>
+        )}
+
+        {/* View Rendering */}
+        <main className="transition-all duration-300">
+          {activeView === 'home' && (
+            <>
+              {/* Hero Section */}
+              <section className="relative min-h-[100vh] flex flex-col items-center justify-center pt-32 pb-24 px-6 md:px-8 overflow-hidden text-center bg-white dark:bg-black">
+                {/* Gradient overlays */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] md:w-[1200px] h-[500px] md:h-[800px] bg-indigo-600/10 dark:bg-indigo-600/25 blur-[100px] md:blur-[150px] rounded-full" />
+                <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/5 dark:bg-purple-600/20 blur-[120px] rounded-full" />
+
+                {/* Content */}
+                <div className="relative z-10 max-w-6xl mx-auto flex flex-col items-center justify-center">
+                  <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-900 backdrop-blur-sm border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 text-[10px] font-black uppercase tracking-widest mb-6 animate-in fade-in slide-in-from-top-4 duration-700">
+                    <Sparkles className="text-indigo-500 dark:text-indigo-400 w-4 h-4" />
+                    <span>The Professional Practice Suite</span>
+                  </div>
+
+                  <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black tracking-tight mb-6 leading-snug text-zinc-900 dark:text-white animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    JAM, LEARN, AND MASTER GUITAR<br />
+                    WITH BACKING TRACKS
+                  </h1>
+
+                  <p className="text-zinc-600 dark:text-zinc-400 text-base md:text-xl max-w-2xl mb-10 font-medium leading-relaxed px-4 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                    Search thousands of professional backing tracks and practice smarter with our intelligent guitar learning platform.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-5 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                    <Link
+                      href="/sign-in"
+                      className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white px-10 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-2xl shadow-indigo-600/30 dark:shadow-indigo-500/40 flex items-center justify-center space-x-3 group"
+                    >
+                      <span>Get Started</span>
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+              </section>
+
+              {/* Toolkit Section */}
+              <section id="toolkit" className="px-6 md:px-12 py-32 bg-zinc-50 dark:bg-zinc-950/50 border-t border-zinc-200 dark:border-zinc-900">
+                <div className="max-w-7xl mx-auto">
+                  <div className="flex flex-col lg:flex-row gap-20">
+                    <div className="lg:w-1/3 space-y-10 text-center lg:text-left">
+                      <div className="inline-flex items-center space-x-2 text-indigo-600 dark:text-indigo-500 text-[10px] font-black uppercase tracking-[0.3em]">
+                        <Zap size={16} />
+                        <span>The Musician&apos;s Toolkit</span>
+                      </div>
+                      <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white leading-tight tracking-tighter">Everything but the Strings. </h2>
+                      <p className="text-zinc-500 dark:text-zinc-400 text-lg leading-relaxed mx-auto lg:mx-0">RiffMaster eliminates the need for 5 different apps. We built the essential utilities directly into your practicing experience.</p>
+                      <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto lg:mx-0">
+                        <ToolkitItem icon={<Gauge size={16}/>} name="Metronome" active={activeToolkit === 'Metronome'} onActivate={() => setActiveToolkit('Metronome')} />
+                        <ToolkitItem icon={<Zap size={16}/>} name="Tuner" active={activeToolkit === 'Tuner'} onActivate={() => setActiveToolkit('Tuner')} />
+                        <ToolkitItem icon={<Hash size={16}/>} name="Chord Map" active={activeToolkit === 'Chord Map'} onActivate={() => setActiveToolkit('Chord Map')} />
+                        <ToolkitItem icon={<Grid size={16}/>} name="Scales" active={activeToolkit === 'Scales'} onActivate={() => setActiveToolkit('Scales')} />
+                      </div>
+                    </div>
+                    <div className="lg:w-2/3">
+                      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[3rem] p-12 relative group overflow-hidden min-h-[400px] flex flex-col justify-center shadow-xl transition-all">
+                        <div className="absolute inset-0 bg-indigo-600/5 group-hover:bg-indigo-600/10 transition-colors" />    
+                          {activeToolkit === 'Scales' && (
+                            <div className="relative z-10 space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
+                              <div className="flex items-center justify-between">
+                                  <div className="space-y-1 text-left">
+                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Scale Explorer</h3>
+                                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Dynamic Fretboard Visualization</p>
+                                  </div>
+                                  <div className="flex space-x-2">
+                                    <span className="bg-indigo-600 text-white text-[10px] font-black px-4 py-2 rounded-xl uppercase">E MINOR</span>
+                                  </div>
+                              </div>
+                              <div className="h-48 w-full bg-zinc-50 dark:bg-black/40 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 p-8 flex flex-col justify-between">
+                                {[1, 2, 3, 4].map(s => (
+                                  <div key={s} className="h-px w-full bg-zinc-200 dark:bg-zinc-800 relative">
+                                      {s === 2 && <div className="absolute left-1/4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-indigo-600 border-2 border-indigo-400 shadow-lg shadow-indigo-600/30" />}
+                                      {s === 3 && <div className="absolute left-1/2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-zinc-300 dark:bg-zinc-800 border-2 border-zinc-400 dark:border-zinc-700" />}
+                                  </div>
+                                ))}
+                              </div>
+                              <p className="text-zinc-400 dark:text-zinc-600 text-xs font-medium italic text-center">Interactive visual tools built specifically for guitarists.</p>
+                            </div>
+                          )}
+                          {activeToolkit === 'Metronome' && (
+                            <div className="relative z-10 space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 flex flex-col items-center">
+                              <div className="text-center space-y-1">
+                                  <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Precision Metronome</h3>
+                                  <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Rock Solid Timekeeping</p>
+                              </div>
+                              <div className="flex items-center space-x-8">
+                                  {[0, 1, 2, 3].map(t => (
+                                    <div key={t} className={`w-4 h-4 rounded-full transition-all duration-300 ${tick === t ? (t === 0 ? 'bg-indigo-500 scale-150 shadow-[0_0_20px_rgba(99,102,241,0.5)]' : 'bg-zinc-400 dark:bg-zinc-400') : 'bg-zinc-200 dark:bg-zinc-800 scale-75'}`} />
+                                  ))}
+                              </div>
+                              <div className="text-6xl font-black text-zinc-900 dark:text-white tracking-tighter">120 <span className="text-lg text-zinc-400 dark:text-zinc-600">BPM</span></div>
+                            </div>
+                          )}
+                          {activeToolkit === 'Tuner' && (
+                            <div className="relative z-10 space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 flex flex-col items-center">
+                              <div className="text-center space-y-1">
+                                  <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Chromatic Tuner</h3>
+                                  <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Ultra-Low Latency Pitch Detection</p>
+                              </div>
+                              <div className="relative w-full h-24 flex items-center justify-center">
+                                  <div className="absolute w-full h-0.5 bg-zinc-200 dark:bg-zinc-800" />
+                                  <div className="absolute w-0.5 h-12 bg-indigo-500 shadow-[0_0_20px_rgba(99,102,241,1)]" />
+                                  <div className="absolute w-4 h-4 bg-emerald-500 rounded-full blur-sm animate-pulse" />
+                              </div>
+                              <div className="text-7xl font-black text-emerald-500">E</div>
+                            </div>
+                          )}
+                          {activeToolkit === 'Chord Map' && (
+                            <div className="relative z-10 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                              <div className="flex items-center justify-between">
+                                  <div className="space-y-1 text-left">
+                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Chord Library</h3>
+                                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">5,000+ Shapes at your fingertips</p>
+                                  </div>
+                                  <span className="bg-indigo-600 text-white text-[10px] font-black px-4 py-2 rounded-xl uppercase">C MAJOR</span>
+                              </div>
+                              <div className="flex justify-center">
+                                  <div className="w-48 h-64 border-l-2 border-zinc-300 dark:border-zinc-700 relative flex justify-between px-2 py-4">
+                                    {[1, 2, 3, 4].map(f => (
+                                      <div key={f} className="absolute w-full h-px bg-zinc-200 dark:bg-zinc-800" style={{ top: `${f * 25}%` }} />
+                                    ))}
+                                    {[1, 2, 3, 4, 5, 6].map(s => (
+                                      <div key={s} className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                          {s === 2 && <div className="absolute w-6 h-6 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-3 top-1/4 shadow-lg shadow-indigo-600/30" />}
+                                          {s === 4 && <div className="absolute w-6 h-6 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-3 top-1/2 shadow-lg shadow-indigo-600/30" />}
+                                      </div>
+                                    ))}
+                                  </div>
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Feature Grid */}
+              
+              <section id="features" className="
+                relative px-6 md:px-8 py-32 text-center
+                border-t border-zinc-200 dark:border-zinc-900
+                dark:bg-black
+                dark:before:absolute dark:before:inset-x-0 dark:before:top-0
+                dark:before:h-px
+                dark:before:bg-gradient-to-r
+                dark:before:from-transparent
+                dark:before:via-indigo-500/40
+                dark:before:to-transparent
+              ">
+                <div className="max-w-6xl mx-auto">
+                  <div className="mb-24">
+                    <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter mb-6">Designed for Performance</h2>
+                    <p className="text-zinc-500 dark:text-zinc-500 text-lg max-w-2xl mx-auto leading-relaxed px-4">A sleek, distraction-free environment focused on one thing: making you a better player.</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                    <FeatureCard 
+                      icon={<Zap size={24} />}
+                      title="Advanced Controls"
+                      desc="Loop specific phrases, drop the tempo to 50% without artifacting, and adjust volume mix on the fly."
+                    />
+                    <FeatureCard 
+                      icon={<ListMusic size={24} />}
+                      title="Session Playlists"
+                      color="purple"
+                      desc="Organize your tracks into practice routines. Group by genre, key, or your specific training goals."
+                    />
+                    <FeatureCard 
+                      icon={<Heart size={24} />}
+                      title="Favorites Vault"
+                      color="emerald"
+                      desc="Quick access to your most loved backing tracks. Your library synced across all your practice sessions."
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Highlighted Artist View */}
+              <section className="px-6 md:px-12 py-32 bg-zinc-50 dark:bg-zinc-950/30 border-t border-zinc-200 dark:border-zinc-900">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 space-y-6 md:space-y-0">
+                      <div className="text-left">
+                        <div className="inline-flex items-center space-x-2 text-indigo-600 dark:text-indigo-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+                          <Users size={16} />
+                          <span>The Riff Collective</span>
+                        </div>
+                        <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">Highlighted Artists</h2>
+                      </div>
+                      <Link href="/artists" className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-black uppercase text-xs tracking-widest">
+                        <span>View All</span>
+                        <ChevronRight size={14} />
+                      </Link>
+                    </div>
+                  
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                      {isLoading ? (
+                        // Loading skeleton
+                        [...Array(6)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="animate-pulse bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-md relative"
+                          >
+                            <div className="aspect-[4/5] bg-zinc-200 dark:bg-zinc-700" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent p-6 flex flex-col justify-end">
+                              <div className="h-6 w-3/4 bg-zinc-300 dark:bg-zinc-600 rounded mb-2" />
+                              <div className="h-4 w-1/2 bg-zinc-300 dark:bg-zinc-600 rounded" />
+                            </div>
+                          </div>
+                        ))
+                      ) : error ? (
+                        <div className="col-span-full text-center py-12">
+                          <p className="text-zinc-500 dark:text-zinc-400">Failed to load artists</p>
+                        </div>
+                      ) : (
+                        visible.map((artist, idx) => {
+                          const artistImage = artistImages[artist.id] || null;
+                          return (
+                            <ArtistCard
+                              key={artist.id ?? idx}
+                              id={artist.id}
+                              name={artist.name}
+                              trackCount={artist.backing_tracks_count}
+                              image={artistImage}
+                            />
+                          );
+                        })
+                      )}
+                    </div>
+                    
+                    {/* Pagination Controls */}
+                    {!isLoading && !error && totalPages > 1 && (
+                      <div className="mt-12 flex items-center justify-center gap-4">
+                        <button
+                          type="button"
+                          onClick={handlePrev}
+                          disabled={currentPage === 1}
+                          className="inline-flex items-center px-6 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                        >
+                          <ChevronRight size={16} className="rotate-180 mr-2" />
+                          Previous
+                        </button>
+                        
+                        <div className="flex items-center space-x-2">
+                          {/* Page numbers */}
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setPage(pageNum)}
+                                className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${
+                                  currentPage === pageNum
+                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        
+                        <button
+                          type="button"
+                          onClick={handleNext}
+                          disabled={currentPage === totalPages}
+                          className="inline-flex items-center px-6 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                        >
+                          Next
+                          <ChevronRight size={16} className="ml-2" />
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Page info */}
+                    {!isLoading && !error && safeArtists.length > 0 && (
+                      <div className="mt-6 text-center">
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                          Showing {start + 1}-{Math.min(end, safeArtists.length)} of {safeArtists.length} artists
+                        </p>
+                      </div>
+                    )}
+                    {/* <div className="mt-20 p-1 rounded-[2.5rem] bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500">
+                      <div className="bg-white dark:bg-zinc-950 rounded-[2.4rem] p-10 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 text-left">
+                          <div className="max-w-xl space-y-6">
+                            <h3 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Ready to join the elite?</h3>
+                            <p className="text-zinc-500 dark:text-zinc-400 text-lg leading-relaxed">Join 50,000+ guitarists who have already leveled up their improvisational skills using RiffMaster AI.</p>
+                          </div>
+                          <button className="bg-indigo-600 text-white px-12 py-5 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-indigo-600/20 whitespace-nowrap">Create your session</button>
+                      </div>
+                    </div> */}
+                </div>
+              </section>
+            </>
+          )}
+        </main>
+
+        {/* Basic Floating Player Bar */}
+        {previewTrack && (
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[150] w-full max-w-3xl px-6 animate-in slide-in-from-bottom-8 duration-500">
+            <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-4 shadow-2xl flex items-center gap-4 md:gap-6 group overflow-hidden">
+                <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
+                  <Image src={previewTrack.coverUrl} alt="" className="w-full h-full object-cover" />
+                </div>
+                
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="min-w-0 pr-4">
+                      <p className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 leading-tight truncate">{previewTrack.title}</p>
+                      <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest truncate">{previewTrack.artist}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="hidden sm:inline text-[9px] font-black text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md uppercase">{previewTrack.key}</span>
+                      <Headset size={14} className="text-indigo-500 animate-pulse" />
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                      <span className="text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 text-right tabular-nums">{formatTime(currentTime)}</span>
+                      <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full relative group/progress cursor-pointer">
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max={duration || 100} 
+                          value={currentTime} 
+                          onChange={handleSeek} 
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                        />
+                        <div 
+                          className="absolute inset-y-0 left-0 bg-indigo-600 rounded-full transition-all duration-300"
+                          style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                        />
+                        <div 
+                          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-indigo-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity shadow-sm"
+                          style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 6px)` }}
+                        />
+                      </div>
+                      <span className="text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 tabular-nums">{formatTime(duration)}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 md:gap-4 pr-1">
+                  <div className="hidden sm:flex items-center space-x-2 group/vol w-24">
+                    <button onClick={() => setVolume(v => (v === 0 ? 0.8 : 0))}>
+                      {volume === 0 ? <VolumeX size={18} className="text-zinc-400" /> : <Volume2 size={18} className="text-zinc-400" />}
+                    </button>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1" 
+                      step="0.01" 
+                      value={volume} 
+                      onChange={handleVolumeChange} 
+                      className="w-full h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full accent-indigo-600 appearance-none cursor-pointer" 
+                    />
+                  </div>
+
+                  <button 
+                    onClick={handleDownload}
+                    title="Download Backing Track"
+                    className="p-2 text-zinc-400 hover:text-indigo-600 transition-colors"
+                  >
+                    <Download size={18} />
+                  </button>
+
+                  <button 
+                    onClick={() => setIsPlaying(!isPlaying)}
+                    className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-600/20"
+                  >
+                    {isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      setPreviewTrack(null);
+                      setIsPlaying(false);
+                    }}
+                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <footer className="py-20 px-6 md:px-12 text-center border-t border-zinc-200 dark:border-zinc-900 bg-zinc-50 dark:bg-black transition-all">
+          {/* Logo */}
+          <div
+            className="flex items-center justify-center space-x-3 mb-6 cursor-pointer"
+          >
             <Image
-              src="/guitar-jam-track.png" //
+              src="/guitar-jam-track.png"
               alt="Guitar JamTrack Logo"
               width={32}
               height={32}
               priority
-              className="h-8 w-8 brightness-0 invert"
+              className="h-8 w-8 brightness-0 dark:brightness-100 dark:invert"
             />
-            <span className="brightness-0 invert">Guitar JamTrack</span>
-          </Link>
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-6 ml-auto">
-            <Link
-              href="/tracks"
-              className="relative text-white hover:text-blue-500 font-medium text-[15px]
-              transition-colors duration-200 after:content-[''] after:absolute after:left-0 
-              after:-bottom-1 after:w-0 after:h-[2px] after:bg-blue-500
-              hover:after:w-full after:transition-all after:duration-300"
-            >
-              Backing Tracks
-            </Link>
-            <Link
-              href="/artists"
-              className="relative text-white hover:text-blue-500 font-medium text-[15px]
-              transition-colors duration-200 after:content-[''] after:absolute after:left-0 
-              after:-bottom-1 after:w-0 after:h-[2px] after:bg-blue-500
-              hover:after:w-full after:transition-all after:duration-300"
-            >
-              Artists
-            </Link>
-            <Link
-              href="/sign-in"
-              className="relative text-white hover:text-blue-500 font-medium text-[15px]
-              transition-colors duration-200 after:content-[''] after:absolute after:left-0 
-              after:-bottom-1 after:w-0 after:h-[2px] after:bg-blue-500
-              hover:after:w-full after:transition-all after:duration-300"
-            >
-              Sign In
-            </Link>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-white"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-          </nav>
-          {/* Mobile Right Section */}
-          <div className="flex items-center lg:hidden ml-auto space-x-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full text-white"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-            {/* Mobile menu toggle */}
-            <Button variant="ghost" size="icon" onClick={() => setMobileOpen(!mobileOpen)}>
-              {mobileOpen ? <X className="h-6 w-6 text-white" /> : <Menu className="h-6 w-6 text-white" />}
-            </Button>
+            <span className="font-black tracking-tighter text-lg uppercase text-zinc-900 dark:text-white">
+              Guitar JamTrack
+            </span>
           </div>
-          {/* Mobile Navigation Drawer */}
-          {isClient && mobileOpen && (
-            <nav className="lg:hidden fixed top-0 left-0 text-black dark:text-white text-center min-w-[250px] h-full bg-white dark:bg-black shadow-md p-6 space-y-4 z-50 overflow-auto">
-              <Link href="/" className="block font-semibold text-lg hover:text-blue-500" onClick={() => setMobileOpen(false)}>
-                <span className="inline-flex items-center justify-center gap-2">
-                  <Image src="/guitar-jam-track.png" alt="Guitar JamTrack Logo" width={28} height={28} className="h-7 w-7 dark:brightness-0 dark:invert" />
-                  Guitar JamTrack
-                </span>
-              </Link>
-              <Link href="/tracks" className="block hover:text-blue-500" onClick={() => setMobileOpen(false)}>
-                Backing Tracks
-              </Link>
-              <Link href="/artists" className="block hover:text-blue-500" onClick={() => setMobileOpen(false)}>
-                Artists
-              </Link>
-              <Link href="/sign-in" className="block hover:text-blue-500" onClick={() => setMobileOpen(false)}>
-                Sign In
-              </Link>
-            </nav>
-          )}
-        </div>
-      </header>
-      <section
-        className="relative flex flex-col items-center justify-center text-center min-h-[100vh] px-4 pb-20 bg-cover bg-center"
-        style={{
-          backgroundImage:
-            "url('https://images.unsplash.com/photo-1684194096067-48a71562c9f9?q=80&w=1030&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
-        }}
-      >
-        {/* Overlay to darken background for readability */}
-        <div className="absolute inset-0 bg-black/50" />
-        {/* Content */}
-        <div className="relative max-w-2xl mx-auto">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white leading-tight">
-            Jam, Learn, and Master Guitar with <span> Backing Tracks </span>
-          </h1>
-          <p className="mt-6 text-lg sm:text-xl text-gray-200 max-w-xl mx-auto">
-            Search thousands of tracks, and practice smarter.
+
+          {/* Description */}
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm max-w-md mx-auto font-medium leading-relaxed mb-8">
+            Built by guitarists, for guitarists. Practice smarter with professional backing tracks and modern tools.
           </p>
-          {/* CTA Buttons */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/sign-in">
-              <Button
-                size="lg"
-                className="text-lg bg-blue-500 hover:bg-blue-500 text-white rounded-md shadow-md transition-all duration-200 hover:shadow-blue-500/30 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
-              >
-                Get Started
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-      <section className="relative px-4 pt-16 bg-white dark:bg-black transition-colors duration-300">
-        <div className="max-w-screen-xl mx-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-            {/* Card 1 */}
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#101010] p-8 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <p className="text-4xl sm:text-5xl font-extrabold text-blue-500 dark:text-blue-400">10k+</p>
-              <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">Backing Tracks</p>
-            </div>
 
-            {/* Card 2 */}
-            <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#101010] p-8 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <p className="text-4xl sm:text-5xl font-extrabold text-blue-500 dark:text-blue-400">1k+</p>
-              <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">Artists</p>
-            </div>
+          {/* Credit */}
+          <p className="text-xs text-zinc-400 dark:text-zinc-600 font-medium mb-2">
+            Built by{" "}
+            <a
+              href="https://abelwebdev.netlify.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-zinc-600 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-white transition-colors"
+            >
+              me
+            </a>
+          </p>
 
-            {/* Card 3 */}
-            <div className="col-span-2 sm:col-span-1 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#101010] p-8 text-center shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <p className="text-4xl sm:text-5xl font-extrabold text-blue-500 dark:text-blue-400">50+</p>
-              <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-300">Genres & Styles</p>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section className="py-16 sm:py-20 bg-white dark:bg-black">
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-4">
-              Discover <span className="text-blue-500 dark:text-blue-400">Artists</span>
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Discover amazing artists and their backing tracks
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {isLoading ? 
-                [...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="animate-pulse bg-white dark:bg-[#101010] rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm"
-                  >
-                    <div className="relative p-4">
-                      {/* Image Skeleton */}
-                      <div className="w-full h-48 mb-4 bg-gray-200 dark:bg-gray-700 rounded-lg" />
-
-                      {/* Title Skeleton */}
-                      <div className="h-5 w-3/4 bg-gray-200 dark:bg-gray-700 rounded mb-3" />
-
-                      {/* Button Skeleton */}
-                      <div className="h-9 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
-                    </div>
-                  </div>
-                ))
-              :
-                visible.map((artist) => {
-                  const href = `/artist/${encodeURIComponent(
-                    (artist.name ?? "").replace(/\s+/g, "_")
-                  )}?id=${artist.id}`;
-                  return (
-                    <div
-                      key={artist.id}
-                      className="group relative bg-white dark:bg-[#101010] rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                    >
-                      <div
-                        className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-10 transition-opacity duration-300"
-                        aria-hidden
-                      >
-                        <div className="absolute -top-6 -right-6 h-20 w-20 rounded-full bg-blue-500 blur-2xl" />
-                      </div>
-                      <div className="relative p-4">
-                        {/* Image Container */}
-                        <div className="relative w-full h-70 mb-4 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
-                          {/* Skeleton loader (shown until image loads) */}
-                          {!imageLoaded && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700 animate-pulse">
-                              <div className="w-3/4 h-3/4 bg-gray-300 dark:bg-gray-600 rounded-lg" />
-                            </div>
-                          )}
-                          <Image
-                            src={artistImages[artist.id] ?? '/public/background-placeholder.jpg'}
-                            alt={artist.name ?? "Artist"}
-                            fill
-                            className={`object-cover transition-transform duration-300 group-hover:scale-105 ${
-                              imageLoaded ? "opacity-100" : "opacity-0"
-                            }`}
-                            onLoadingComplete={() => setImageLoaded(true)}
-                            priority={false}
-                          />
-                        </div>
-                        {/* Content */}
-                        <div className="space-y-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 flex-1">
-                              {artist.name}
-                            </h3>
-                          </div>
-                          <Link
-                            href={href}
-                            className="block w-full text-center rounded-lg bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                          >
-                            View Artist
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-          </div>
-          {totalPages > 1 && (
-            <div className="mt-12 flex items-center justify-center gap-4">
-              <button
-                type="button"
-                onClick={handlePrev}
-                disabled={currentPage === 1}
-                className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
-              >
-                Previous
-              </button>
-              <span className="text-sm text-gray-600 dark:text-gray-300 px-4 py-2">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={currentPage === totalPages}
-                className="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
-      <div className="flex flex-col">
-        <main className="flex-1"></main>
-        <footer className="bg-gray-100 text-gray-800 dark:bg-[#101010] dark:text-gray-100 py-4 px-4 w-full mt-auto transition-colors duration-300">
-          <div className="container mx-auto text-center">
-            <p className="inline-flex items-center gap-1">
-              Guitar JamTrack, Made with <Heart className="text-blue-500 fill-blue-500" /> by
-              <Link 
-                href="http://abelwebdev.netlify.app" 
-                className="text-blue-600 dark:text-blue-400 ml-1"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                me
-              </Link>
-            </p>
-          </div>
+          {/* Copyright */}
+          <p className="text-xs text-zinc-400 dark:text-zinc-600 font-medium">
+            © {new Date().getFullYear()} Guitar JamTrack
+          </p>
         </footer>
+        <style>{`
+          @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          .animate-gradient {
+            animation: gradient 6s ease infinite;
+          }
+          html {
+            scroll-behavior: smooth;
+          }
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+          }
+        `}</style>
       </div>
     </>
   );
