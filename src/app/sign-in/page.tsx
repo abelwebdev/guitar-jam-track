@@ -15,12 +15,15 @@ export default function Page() {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', password: '', name: '' });
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [sessionLogin] = useSessionLoginMutation();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if (user && user.emailVerified) {
         router.push("/home");
+      } else {
+        setCheckingAuth(false);
       }
     });
     return () => unsubscribe();
@@ -28,6 +31,8 @@ export default function Page() {
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (checkingAuth || loading) return;
+    
     setLoading(true);
     
     try {
@@ -144,6 +149,9 @@ export default function Page() {
   };
 
   const handleGoogleAuth = async () => {
+    if (checkingAuth || loading) return;
+    
+    setLoading(true);
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
       const user = userCredential.user;
@@ -167,16 +175,22 @@ export default function Page() {
           description: error.message || "An error occurred during Google sign in."
         });
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleForgotPassword = async () => {
+    if (checkingAuth || loading) return;
+    
     if (!formData.email) {
       toast.info("Email required", {
         description: "Please enter your email address to reset your password."
       });
       return;
     }
+    
+    setLoading(true);
     try {
       await sendPasswordResetEmail(auth, formData.email);
       toast.success("Reset email sent!", {
@@ -204,6 +218,8 @@ export default function Page() {
             description: error.message || "Failed to send password reset email."
           });
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -237,7 +253,8 @@ export default function Page() {
             <div className="flex p-1 bg-black/40 rounded-xl mb-6 border border-zinc-800">
               <button 
                 onClick={() => setIsLogin(true)}
-                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                disabled={checkingAuth || loading}
+                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50 ${
                   isLogin ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
@@ -245,7 +262,8 @@ export default function Page() {
               </button>
               <button 
                 onClick={() => setIsLogin(false)}
-                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
+                disabled={checkingAuth || loading}
+                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50 ${
                   !isLogin ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
@@ -267,7 +285,8 @@ export default function Page() {
                       value={formData.name}
                       onChange={e => setFormData({...formData, name: e.target.value})}
                       required
-                      className="w-full bg-black/40 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 focus:bg-black/60 transition-all text-white placeholder-zinc-600" 
+                      disabled={checkingAuth || loading}
+                      className="w-full bg-black/40 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 focus:bg-black/60 transition-all text-white placeholder-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed" 
                     />
                   </div>
                 </div>
@@ -285,7 +304,8 @@ export default function Page() {
                     placeholder="jimi@strat.com"
                     value={formData.email}
                     onChange={e => setFormData({...formData, email: e.target.value})}
-                    className="w-full bg-black/40 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 focus:bg-black/60 transition-all text-white placeholder-zinc-600" 
+                    disabled={checkingAuth || loading}
+                    className="w-full bg-black/40 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 focus:bg-black/60 transition-all text-white placeholder-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed" 
                   />
                 </div>
               </div>
@@ -299,7 +319,8 @@ export default function Page() {
                     <button 
                       type="button" 
                       onClick={handleForgotPassword}
-                      className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-widest"
+                      disabled={checkingAuth || loading}
+                      className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Forgot?
                     </button>
@@ -313,17 +334,18 @@ export default function Page() {
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={e => setFormData({...formData, password: e.target.value})}
-                    className="w-full bg-black/40 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 focus:bg-black/60 transition-all text-white placeholder-zinc-600" 
+                    disabled={checkingAuth || loading}
+                    className="w-full bg-black/40 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:border-indigo-500 focus:bg-black/60 transition-all text-white placeholder-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed" 
                   />
                 </div>
               </div>
 
               <button 
                 type="submit" 
-                disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold mt-6 transition-all shadow-xl shadow-indigo-900/40 active:scale-[0.98] disabled:opacity-50"
+                disabled={checkingAuth || loading}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold mt-6 transition-all shadow-xl shadow-indigo-900/40 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+                {checkingAuth ? 'Sign In' : (loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account'))}
               </button>
             </form>
 
@@ -338,7 +360,8 @@ export default function Page() {
 
             <button 
               onClick={handleGoogleAuth}
-              className="w-full flex items-center justify-center space-x-2 py-3 rounded-xl border border-zinc-800 hover:bg-zinc-800 transition-all text-zinc-300"
+              disabled={checkingAuth || loading}
+              className="w-full flex items-center justify-center space-x-2 py-3 rounded-xl border border-zinc-800 hover:bg-zinc-800 transition-all text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
