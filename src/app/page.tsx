@@ -1,17 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { useTheme } from "next-themes";
 import {
   Mic2, Play, Sparkles, Zap, Music, ChevronRight, Star, Menu, X, 
   Hash, Grid, Gauge, Activity, Clock, Trophy, ListMusic, Brain, Heart,
   Search, Filter, Sun, Moon, Users, ArrowLeft, Pause, Volume2, 
   ShieldCheck, Headset, Download, VolumeX
 } from 'lucide-react';
-import { Genre, BackingTrack } from '../types/types';
+import { BackingTrack } from '../types/types';
 import { useGetHighlightedArtistsQuery } from "@/services/api";
 import { auth } from "@/lib/firebaseClient";
 import { useRouter } from "next/navigation";
@@ -65,40 +63,7 @@ const ArtistCard: React.FC<{ id: number, name: string | null, trackCount: number
   </Link>
 );
 
-const TrackPreviewRow: React.FC<{ 
-  track: BackingTrack, 
-  isPlaying: boolean, 
-  onPlay: (track: BackingTrack) => void
-}> = ({ track, isPlaying, onPlay }) => (
-  <div onClick={() => onPlay(track)} className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
-    <div className="flex items-center space-x-4">
-      <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
-        <Image src={track.coverUrl} className="w-full h-full object-cover" alt="" />
-        <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
-          {isPlaying ? <Pause size={16} fill="white" className="text-white" /> : <Play size={16} fill="white" className="text-white ml-0.5" />}
-        </div>
-      </div>
-      <div className="text-left">
-        <h4 className={`text-sm font-bold mb-0.5 ${isPlaying ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'}`}>{track.title}</h4>
-        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{track.artist}</p>
-      </div>
-    </div>
-    <div className="flex items-center space-x-6">
-      <div className="hidden sm:flex items-center space-x-2">
-        <span className="px-2 py-0.5 rounded-md bg-zinc-200 dark:bg-zinc-800 text-[9px] font-black text-zinc-500 border border-zinc-300 dark:border-zinc-700">{track.key}</span>
-        <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 uppercase">{track.bpm} BPM</span>
-      </div>
-      <button className={`text-[10px] font-black uppercase tracking-widest transition-opacity ${isPlaying ? 'text-indigo-600 dark:text-indigo-400 opacity-100' : 'text-zinc-400 group-hover:text-indigo-600 opacity-0 group-hover:opacity-100'}`}>
-        {isPlaying ? 'Playing' : 'Listen'}
-      </button>
-    </div>
-  </div>
-);
-
-
 export default function Header() {
-  const router = useRouter();
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // Landing page state
@@ -107,8 +72,6 @@ export default function Header() {
   const [activeToolkit, setActiveToolkit] = useState<'Metronome' | 'Tuner' | 'Chord Map' | 'Scales'>('Scales');
   const [tick, setTick] = useState(0);
 
-  const [trackSearch, setTrackSearch] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState<Genre | 'All'>('All');
   const [selectedArtistName, setSelectedArtistName] = useState<string | null>(null);
 
   const [page, setPage] = useState(1);
@@ -149,51 +112,6 @@ export default function Header() {
     }
   }, [activeToolkit]);
 
-  const handleNav = (view: LandingView) => {
-    setActiveView(view);
-    setSelectedArtistName(null);
-    setIsMobileMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handlePreviewPlay = (track: BackingTrack) => {
-    if (previewTrack?.id === track.id) {
-      setIsPlaying(!isPlaying);
-    } else {
-      setPreviewTrack(track);
-      setIsPlaying(true);
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
-      setCurrentTime(time);
-    }
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume;
-    }
-  };
-
-  const handleDownload = () => {
-    if (previewTrack) {
-      window.open(previewTrack.audioUrl, '_blank');
-    }
-  };
-
-  const onTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
-      setDuration(audioRef.current.duration);
-    }
-  };
-
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
@@ -203,14 +121,7 @@ export default function Header() {
         audioRef.current.pause();
       }
     }
-  }, [isPlaying, previewTrack]);
-
-  const formatTime = (time: number) => {
-    if (isNaN(time)) return "0:00";
-    const mins = Math.floor(time / 60);
-    const secs = Math.floor(time % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, [isPlaying, previewTrack, volume]);
 
   useEffect(() => {
     const fetchImageFor = async (artistId: number, name: string | null) => {
@@ -240,127 +151,8 @@ export default function Header() {
         <audio 
           ref={audioRef} 
           src={previewTrack?.audioUrl} 
-          onTimeUpdate={onTimeUpdate}
           onEnded={() => setIsPlaying(false)}
         />
-      
-        {/* Navigation */}
-        <nav className="fixed top-0 left-0 right-0 z-[100] px-6 md:px-12 py-5 flex items-center justify-between backdrop-blur-xl bg-white/70 dark:bg-black/40 border-b border-zinc-200 dark:border-white/5 transition-all">
-          {/* Logo */}
-          <div className="flex items-center space-x-3 cursor-pointer">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center ">
-              <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-                <Image
-                  src="/guitar-jam-track.png"
-                  alt="Guitar JamTrack Logo"
-                  width={32}
-                  height={32}
-                  priority
-                  className="h-8 w-8 brightness-0 dark:brightness-100 dark:invert"
-                />
-              </Link>
-            </div>
-            <span className="text-lg sm:text-xl font-black tracking-tighter uppercase text-zinc-900 dark:text-white">
-              Guitar JamTrack
-            </span>
-          </div>
-
-          {/* Desktop menu */}
-          <div className="hidden md:flex items-center space-x-10">
-            <div className="flex items-center space-x-8">
-              <Link
-                href="/tracks"
-                className="relative text-zinc-900 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-400 font-medium text-[15px]
-                transition-colors duration-200 after:content-[''] after:absolute after:left-0 
-                after:-bottom-1 after:w-0 after:h-[2px] after:bg-indigo-500 dark:after:bg-indigo-400
-                hover:after:w-full after:transition-all after:duration-300"
-              >
-                Tracks
-              </Link>
-
-              <Link
-                href="/artists"
-                className="relative text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 font-medium text-[15px]
-                transition-colors duration-200 after:content-[''] after:absolute after:left-0 
-                after:-bottom-1 after:w-0 after:h-[2px] after:bg-indigo-500 dark:after:bg-indigo-400
-                hover:after:w-full after:transition-all after:duration-300"
-              >
-                Artists
-              </Link>
-            </div>
-
-            <div className="flex items-center space-x-4 border-l border-zinc-200 dark:border-zinc-800 pl-10">
-              {/* Theme toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full text-zinc-600 dark:text-zinc-300"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-              </Button>
-
-              {/* Get started (primary button) */}
-              <Link href="/sign-in" className="bg-indigo-600 dark:bg-indigo-500 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20">
-                Get Started
-              </Link>
-            </div>
-          </div>
-
-          {/* Mobile menu */}
-          <div className="md:hidden flex items-center space-x-3">
-            {/* Theme toggle */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (mounted && setTheme) {
-                  console.log('Theme toggle clicked, current theme:', theme);
-                  setTheme(theme === "dark" ? "light" : "dark");
-                }
-              }}
-              className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition-all duration-200 relative z-50 touch-manipulation hover:scale-110 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg hover:shadow-zinc-200/50 dark:hover:shadow-zinc-800/50 active:scale-95 group"
-              aria-label="Toggle theme"
-            >
-              <div className="transition-all duration-300 group-hover:rotate-12 group-hover:scale-110">
-                {mounted ? (
-                  theme === "dark" ? (
-                    <Sun size={18} className="animate-in spin-in-180 duration-300" />
-                  ) : (
-                    <Moon size={18} className="animate-in spin-in-180 duration-300" />
-                  )
-                ) : (
-                  <div className="w-[18px] h-[18px]" /> // Placeholder to prevent layout shift
-                )}
-              </div>
-            </button>
-            {/* Menu toggle */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Menu toggle clicked, current state:', isMobileMenuOpen);
-                setIsMobileMenuOpen(!isMobileMenuOpen);
-              }}
-              className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition-all duration-200 relative z-50 touch-manipulation hover:scale-110 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg hover:shadow-zinc-200/50 dark:hover:shadow-zinc-800/50 active:scale-95 group"
-              aria-label="Toggle menu"
-            >
-              <div className="transition-all duration-300 group-hover:scale-110">
-                {isMobileMenuOpen ? (
-                  <X size={20} className="animate-in spin-in-90 duration-200 group-hover:rotate-90" />
-                ) : (
-                  <Menu size={20} className="animate-in fade-in duration-200 group-hover:text-indigo-400" />
-                )}
-              </div>
-            </button>
-          </div>
-        </nav>
 
         {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
@@ -556,7 +348,6 @@ export default function Header() {
               </section>
 
               {/* Feature Grid */}
-              
               <section id="features" className="
                 relative px-6 md:px-8 py-32 text-center
                 border-t border-zinc-200 dark:border-zinc-900
@@ -724,95 +515,6 @@ export default function Header() {
             </>
           )}
         </main>
-
-        {/* Basic Floating Player Bar */}
-        {previewTrack && (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[150] w-full max-w-3xl px-6 animate-in slide-in-from-bottom-8 duration-500">
-            <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-4 shadow-2xl flex items-center gap-4 md:gap-6 group overflow-hidden">
-                <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
-                  <Image src={previewTrack.coverUrl} alt="" className="w-full h-full object-cover" />
-                </div>
-                
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="min-w-0 pr-4">
-                      <p className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 leading-tight truncate">{previewTrack.title}</p>
-                      <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest truncate">{previewTrack.artist}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="hidden sm:inline text-[9px] font-black text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md uppercase">{previewTrack.key}</span>
-                      <Headset size={14} className="text-indigo-500 animate-pulse" />
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                      <span className="text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 text-right tabular-nums">{formatTime(currentTime)}</span>
-                      <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full relative group/progress cursor-pointer">
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max={duration || 100} 
-                          value={currentTime} 
-                          onChange={handleSeek} 
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
-                        />
-                        <div 
-                          className="absolute inset-y-0 left-0 bg-indigo-600 rounded-full transition-all duration-300"
-                          style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
-                        />
-                        <div 
-                          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-indigo-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity shadow-sm"
-                          style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 6px)` }}
-                        />
-                      </div>
-                      <span className="text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 tabular-nums">{formatTime(duration)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 md:gap-4 pr-1">
-                  <div className="hidden sm:flex items-center space-x-2 group/vol w-24">
-                    <button onClick={() => setVolume(v => (v === 0 ? 0.8 : 0))}>
-                      {volume === 0 ? <VolumeX size={18} className="text-zinc-400" /> : <Volume2 size={18} className="text-zinc-400" />}
-                    </button>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="1" 
-                      step="0.01" 
-                      value={volume} 
-                      onChange={handleVolumeChange} 
-                      className="w-full h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full accent-indigo-600 appearance-none cursor-pointer" 
-                    />
-                  </div>
-
-                  <button 
-                    onClick={handleDownload}
-                    title="Download Backing Track"
-                    className="p-2 text-zinc-400 hover:text-indigo-600 transition-colors"
-                  >
-                    <Download size={18} />
-                  </button>
-
-                  <button 
-                    onClick={() => setIsPlaying(!isPlaying)}
-                    className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-600/20"
-                  >
-                    {isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
-                  </button>
-                  
-                  <button 
-                    onClick={() => {
-                      setPreviewTrack(null);
-                      setIsPlaying(false);
-                    }}
-                    className="p-2 text-zinc-400 hover:text-red-500 transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-            </div>
-          </div>
-        )}
 
         {/* Footer */}
         <footer className="py-20 px-6 md:px-12 text-center border-t border-zinc-200 dark:border-zinc-900 bg-zinc-50 dark:bg-black transition-all">

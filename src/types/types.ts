@@ -1,13 +1,4 @@
 
-export enum Genre {
-  BLUES = 'Blues',
-  ROCK = 'Rock',
-  METAL = 'Metal',
-  JAZZ = 'Jazz',
-  FUNK = 'Funk',
-  ACOUSTIC = 'Acoustic'
-}
-
 export interface User {
   email: string;
   name: string;
@@ -17,16 +8,17 @@ export interface User {
 export type ViewState = 'landing' | 'auth' | 'dashboard';
 
 export interface BackingTrack {
-  id: string;
+  id: number;
   title: string;
-  artist: string;
-  genre: Genre;
-  key: string;
-  bpm: number;
-  duration: number; // in seconds
-  audioUrl: string;
-  coverUrl: string;
-  description: string;
+  artist_id?: number | null;
+  track_title?: string | null;
+  track_url?: string | null;
+  audioUrl?: string; // Add optional audioUrl for consistency
+  artist?: {
+    id: number;
+    artist_name: string | null;
+    name?: string | null;
+  } | null;
 }
 
 export interface Playlist {
