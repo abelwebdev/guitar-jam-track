@@ -394,9 +394,9 @@ export default function TracksPage() {
 
       {/* Fixed Audio Player */}
       {previewTrack && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[150] w-full max-w-3xl px-6 animate-in slide-in-from-bottom-8 duration-500">
-           <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-4 shadow-2xl flex items-center gap-4 md:gap-6 group overflow-hidden">
-              <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
+        <div className="fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-[150] w-full max-w-3xl px-4 sm:px-6 animate-in slide-in-from-bottom-8 duration-500">
+           <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-[2.5rem] p-3 sm:p-4 shadow-2xl flex items-center gap-2 sm:gap-4 md:gap-6 group overflow-hidden">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
                 <Image 
                   src={'/background-placeholder.jpg'} 
                   alt={previewTrack.track_title || previewTrack.title || 'Track'}
@@ -407,14 +407,14 @@ export default function TracksPage() {
               </div>
               <div className="min-w-0 flex-1">
                  <div className="flex items-center justify-between mb-1">
-                   <div className="min-w-0 pr-4">
-                     <p className="text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 leading-tight truncate">{previewTrack.track_title || previewTrack.title || 'Unknown Track'}</p>
-                     <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest truncate">{getArtistName(previewTrack.artist)}</p>
+                   <div className="min-w-0 pr-2 sm:pr-4">
+                     <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 leading-tight truncate">{previewTrack.track_title || previewTrack.title || 'Unknown Track'}</p>
+                     <p className="text-[8px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest truncate">{getArtistName(previewTrack.artist)}</p>
                    </div>
                  </div>
-                 <div className="flex items-center gap-3">
-                    <span className="text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 text-right tabular-nums">{formatTime(currentTime)}</span>
-                    <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full relative group/progress cursor-pointer">
+                 <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="hidden sm:block text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 text-right tabular-nums">{formatTime(currentTime)}</span>
+                    <div className="flex-1 h-1 sm:h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full relative group/progress cursor-pointer">
                        <input 
                          type="range" 
                          min="0" 
@@ -428,18 +428,18 @@ export default function TracksPage() {
                          style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                        />
                        <div 
-                         className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-indigo-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity shadow-sm"
-                         style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 6px)` }}
+                         className="absolute top-1/2 -translate-y-1/2 w-2 h-2 sm:w-3 sm:h-3 bg-white border-2 border-indigo-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity shadow-sm"
+                         style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 4px)` }}
                        />
                     </div>
-                    <span className="text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 tabular-nums">{formatTime(duration)}</span>
+                    <span className="hidden sm:block text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 tabular-nums">{formatTime(duration)}</span>
                  </div>
               </div>
 
-              <div className="flex items-center gap-2 md:gap-4 pr-1">
-                 <div className="hidden sm:flex items-center space-x-2 group/vol w-24">
+              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 pr-1">
+                 <div className="hidden sm:flex items-center space-x-2 group/vol w-16 sm:w-24">
                    <button onClick={() => setVolume(v => (v === 0 ? 0.8 : 0))}>
-                     {volume === 0 ? <VolumeX size={18} className="text-zinc-400" /> : <Volume2 size={18} className="text-zinc-400" />}
+                     {volume === 0 ? <VolumeX size={16} className="text-zinc-400" /> : <Volume2 size={16} className="text-zinc-400" />}
                    </button>
                    <input 
                     type="range" 
@@ -455,17 +455,17 @@ export default function TracksPage() {
                     href={`/api/download?url=${encodeURIComponent(
                       getTrackUrl(previewTrack.track_url || previewTrack.audioUrl)
                     )}`}
-                    className="p-2 text-zinc-400 hover:text-indigo-600 transition-colors"
+                    className="hidden sm:block p-2 text-zinc-400 hover:text-indigo-600 transition-colors"
                   >
-                    <Download size={18} />
+                    <Download size={16} />
                   </a>
                   
 
                  <button 
                    onClick={() => setIsPlaying(!isPlaying)}
-                   className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-600/20"
+                   className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-600/20"
                  >
-                   {isPlaying ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" className="ml-0.5" />}
+                   {isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
                  </button>
                  
                  <button 
@@ -473,9 +473,9 @@ export default function TracksPage() {
                      setPreviewTrack(null);
                      setIsPlaying(false);
                    }}
-                   className="p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                   className="p-1 sm:p-2 text-zinc-400 hover:text-red-500 transition-colors"
                  >
-                   <X size={20} />
+                   <X size={16} />
                  </button>
               </div>
            </div>
