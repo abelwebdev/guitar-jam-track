@@ -237,7 +237,7 @@ export default function Header() {
                   <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-5 animate-in fade-in slide-in-from-bottom-4 duration-1000">
                     <Link
                       href="/sign-in"
-                      className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white px-10 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-2xl shadow-indigo-600/30 dark:shadow-indigo-500/40 flex items-center justify-center space-x-3 group"
+                      className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-10 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-2xl shadow-indigo-600/30 dark:shadow-indigo-500/40 flex items-center justify-center space-x-3 group"
                     >
                       <span>Get Started</span>
                       <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

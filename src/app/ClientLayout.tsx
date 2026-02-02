@@ -61,7 +61,10 @@ export default function ClientLayout({
 
           <div className="flex items-center space-x-4 border-l border-zinc-200 dark:border-zinc-800 pl-10">
             {/* Get started (primary button) */}
-            <Link href="/sign-in" className="bg-indigo-600 dark:bg-indigo-500 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors">
+            <Link
+              href="/sign-in"
+              className="bg-indigo-600 dark:bg-indigo-600 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-500 dark:hover:bg-indigo-500 transition-colors"
+            >
               Get Started
             </Link>
           </div>
