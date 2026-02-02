@@ -176,6 +176,14 @@ export default function ArtistsPage() {
     return () => clearTimeout(timer);
   }, [artistSearch]);
 
+  // Clear audio player when going back to artist list
+  useEffect(() => {
+    if (!selectedArtistId && previewTrack) {
+      setPreviewTrack(null);
+      setIsPlaying(false);
+    }
+  }, [selectedArtistId]);
+
   // Fetch artist images and bios
   useEffect(() => {
     const fetchImageFor = async (artistId: number, name: string | null) => {
@@ -490,7 +498,12 @@ export default function ArtistsPage() {
         ) : (
           <div className="animate-in slide-in-from-right-4 duration-500 space-y-16">
             <button 
-              onClick={() => setSelectedArtistId(null)}
+              onClick={() => {
+                setSelectedArtistId(null);
+                // Clear audio player when going back to artist list
+                setPreviewTrack(null);
+                setIsPlaying(false);
+              }}
               className="flex items-center space-x-2 text-zinc-500 hover:text-indigo-600 font-black uppercase text-xs tracking-widest transition-colors"
             >
               <ArrowLeft size={16} />
