@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
         hostname: "www.theaudiodb.com",
         pathname: "/images/**",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**"
+      }
     ],
   },
 };

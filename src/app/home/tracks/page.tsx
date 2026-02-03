@@ -1,131 +1,132 @@
 'use client'
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useGetAllTracksQuery, useSearchTracksQuery } from "@/services/api";
-import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/components/ui/search-input";
+import React, { useState, useMemo } from 'react';
+import { Search, Clock } from 'lucide-react';
+import { BackingTrack, PlayerState } from '@/types/types';
+import { MOCK_TRACKS, Genre } from '@/constants';
+import { useGetAllTracksQuery } from '@/services/api';
+import TrackRow from '@/components/TrackRow';
 
-export default function Tracks() {
-  const pageSize = 16;
+const ITEMS_PER_PAGE = 10;
+
+export default function TracksPage() {
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<Genre | 'All'>('All');
 
-  const { data: allTracks, isLoading: isAllTracksLoading, error: isAllTracksError } = useGetAllTracksQuery();
-  const { data: searchResults, isLoading: isSearchLoading, error: isSearchError } = useSearchTracksQuery(
-    searchQuery,
-    { skip: !searchQuery.trim() }
-  );
+  // API queries
+  const { data: tracksData, isLoading: tracksLoading } = useGetAllTracksQuery();
 
-  // Use search results if searching, otherwise use all tracks
-  const tracks = searchQuery.trim() ? searchResults : allTracks;
-  const isTrackLoading = searchQuery.trim() ? isSearchLoading : isAllTracksLoading;
-  const isTrackError = searchQuery.trim() ? isSearchError : isAllTracksError;
+  // Convert API data to expected format
+  const tracks = useMemo(() => {
+    if (!tracksData) return MOCK_TRACKS;
+    return tracksData.map(track => ({
+      ...track,
+      id: track.id.toString(),
+      title: track.track_title || track.title || 'Unknown Track',
+      artist: track.artist?.artist_name || track.artist?.name || 'Unknown Artist',
+      audioUrl: track.track_url || '',
+      coverUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=400',
+      genre: Genre.ROCK,
+      key: 'C',
+      bpm: 120,
+      duration: 180
+    }));
+  }, [tracksData]);
 
-  // Reset pagination whenever the search query changes
-  useEffect(() => setCurrentPage(1), [searchQuery]);
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('riffmaster_favorites');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
 
-  const handleSearch = (query: string) => setSearchQuery(query);
+  const [playerState, setPlayerState] = useState<PlayerState>({
+    isPlaying: false,
+    currentTrack: null,
+    volume: 0.8,
+    playbackRate: 1.0,
+    currentTime: 0,
+    duration: 0,
+    isLooping: false,
+  });
 
-  const totalPages = Math.max(1, Math.ceil((tracks?.length ?? 0) / pageSize));
+  const filteredTracks = useMemo(() => {
+    return tracks.filter(t => {
+      const artist = typeof t.artist === 'string' ? t.artist : t.artist?.artist_name || '';
+      const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           artist.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesGenre = selectedGenre === 'All' || t.genre === selectedGenre;
+      return matchesSearch && matchesGenre;
+    });
+  }, [tracks, searchQuery, selectedGenre]);
+
+  const paginatedTracks = useMemo(() => {
+    return filteredTracks.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  }, [filteredTracks, currentPage]);
+
+  const handlePlayTrack = (track: BackingTrack) => {
+    if (playerState.currentTrack?.id === track.id) {
+      setPlayerState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
+    } else {
+      setPlayerState(prev => ({ ...prev, currentTrack: track, isPlaying: true }));
+    }
+  };
+
+  const toggleFavorite = (track: BackingTrack) => {
+    setFavorites(prev => 
+      prev.includes(track.id.toString()) 
+        ? prev.filter(id => id !== track.id.toString()) 
+        : [...prev, track.id.toString()]
+    );
+  };
 
   return (
-    <div className="min-h-screen w-full max-w-screen-xl mx-auto px-4 sm:px-6 -mb-28">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-4 mb-6">
+    <div className="animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 space-y-6 md:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold">Tracks</h1>
-          <p className="text-muted-foreground">
-            {searchQuery.trim() ? `Search results for '${searchQuery}'` : "Browse all tracks."}
-          </p>
+          <h2 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight mb-2 uppercase tracking-tighter">Library</h2>
+          <p className="text-zinc-500 text-sm font-medium">Browse the full catalog of tracks.</p>
         </div>
-        <div className="hidden md:block text-sm text-muted-foreground">
-          {isTrackLoading ? (
-            <span>Loading…</span>
-          ) : isTrackError ? (
-            <span>Failed to load</span>
-          ) : (
-            <span>
-              Showing {Math.min((currentPage - 1) * pageSize + 1, tracks?.length ?? 0)}-
-              {Math.min(currentPage * pageSize, tracks?.length ?? 0)} of {tracks?.length ?? 0}
-            </span>
-          )}
+        <div className="relative w-full md:w-80 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-hover:text-indigo-500 transition-colors" size={18} />
+          <input 
+            type="text" 
+            placeholder="Search tracks, keys, genres..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl py-3 pl-12 pr-6 text-sm focus:outline-none focus:border-indigo-500 transition-all text-zinc-900 dark:text-white" 
+          />
         </div>
       </div>
+      
+      <div className="space-y-1">
+        <div className="flex items-center px-4 py-2 border-b border-zinc-100 dark:border-zinc-800 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+          <div className="w-10 flex-shrink-0 text-center">#</div>
+          <div className="flex-1 min-w-0 pr-4">Title</div>
+          <div className="hidden lg:flex w-32 flex-shrink-0">Genre</div>
+          <div className="hidden md:flex w-24 flex-shrink-0 text-center justify-center">Key</div>
+          <div className="hidden sm:flex w-20 flex-shrink-0 text-center justify-center">Tempo</div>
+          <div className="w-20 flex-shrink-0 text-center"><Clock size={12} className="mx-auto" /></div>
+          <div className="w-[120px] flex-shrink-0"></div>
+        </div>
 
-      {/* Search Input */}
-      <div className="mb-6">
-        <SearchInput
-          placeholder="Search tracks by title or artist..."
-          onSearch={handleSearch}
-          className="max-w-md"
-        />
+        {paginatedTracks.length > 0 ? paginatedTracks.map((track, idx) => (
+          <TrackRow 
+            key={track.id} 
+            index={(currentPage - 1) * ITEMS_PER_PAGE + idx}
+            track={track} 
+            onPlay={handlePlayTrack} 
+            isPlaying={playerState.isPlaying && playerState.currentTrack?.id === track.id} 
+            isActive={playerState.currentTrack?.id === track.id}
+            isFavorited={favorites.includes(track.id.toString())}
+            onToggleFavorite={toggleFavorite}
+          />
+        )) : (
+          <div className="py-20 text-center text-zinc-400 font-bold border border-dashed border-zinc-200 dark:border-zinc-800 rounded-[2rem]">No tracks found matching your criteria.</div>
+        )}
       </div>
-
-      {/* Track Grid */}
-      {isTrackLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {Array.from({ length: pageSize }).map((_, idx) => (
-            <div key={idx} className="h-32 rounded-lg bg-muted animate-pulse" />
-          ))}
-        </div>
-      ) : isTrackError ? (
-        <div className="text-destructive">Unable to load tracks.</div>
-      ) : tracks?.length ? (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {tracks
-              ?.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-              .map((track) => (
-                <Link
-                  key={track.id}
-                  href={`/home/track/${(track.title ?? "untitled").replace(/\s+/g, "_")}?id=${track.id}`}
-                >
-                  <div className="rounded-lg border p-4 hover:shadow-sm transition-shadow bg-white dark:bg-[#101010] cursor-pointer">
-                    <div className="font-semibold line-clamp-1">
-                      {track.title ?? "Untitled"}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {(track.artist?.artist_name || track.artist?.name) ?? "Unknown artist"}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-center gap-2 mt-8">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              Prev
-            </Button>
-            <div className="text-sm px-2">
-              Page {currentPage} of {totalPages}
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage >= totalPages}
-            >
-              Next
-            </Button>
-          </div>
-        </>
-      ) : (
-        <div className="text-center py-8">
-          {searchQuery.trim() ? (
-            <div>
-              <p className="text-muted-foreground">No tracks found for &quot;{searchQuery}&quot;</p>
-              <p className="text-sm text-muted-foreground mt-2">Try searching with different keywords</p>
-            </div>
-          ) : (
-            <p>No tracks available.</p>
-          )}
-        </div>
-      )}
     </div>
   );
 }

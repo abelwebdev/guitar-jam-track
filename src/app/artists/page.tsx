@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import {
   Play, ChevronRight, ArrowLeft, Pause, Volume2, 
