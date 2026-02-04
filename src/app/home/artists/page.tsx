@@ -3,10 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
-  Play, ChevronRight, ArrowLeft, Pause, Search
+  Play, ChevronRight, ArrowLeft, Pause, Search, Plus, Check, FolderPlus, X
 } from 'lucide-react';
 import { BackingTrack } from '../../../types/types';
-import { useGetAllArtistsQuery, useGetArtistTracksQuery, useSearchArtistsQuery } from "@/services/api";
+import { useGetAllArtistsQuery, useGetArtistTracksQuery, useSearchArtistsQuery, useGetPlaylistQuery, useAddTrackToPlaylistMutation, useCreatePlaylistMutation } from "@/services/api";
 import { usePlayer } from "@/contexts/PlayerContext";
 
 type Artist = {
@@ -14,6 +14,174 @@ type Artist = {
   name: string | null;
   backing_tracks_count: number;
   highlighted?: boolean | null;
+};
+
+type ApiPlaylist = {
+  id: number;
+  name: string;
+  trackCount: number;
+};
+
+// Add to Playlist Modal Component
+const AddToPlaylistModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  track: BackingTrack | null;
+  onAddToPlaylist: (playlistId: number) => void;
+  onCreatePlaylist: (name: string) => void;
+  playlists: ApiPlaylist[];
+  isLoading?: boolean;
+}> = ({ isOpen, onClose, track, onAddToPlaylist, onCreatePlaylist, playlists, isLoading = false }) => {
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [addedToPlaylists, setAddedToPlaylists] = useState<Set<number>>(new Set());
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setShowCreateForm(false);
+      setNewPlaylistName('');
+      setAddedToPlaylists(new Set());
+    }
+  }, [isOpen]);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
+  const handleAddToPlaylist = (playlistId: number) => {
+    onAddToPlaylist(playlistId);
+    setAddedToPlaylists(prev => new Set([...prev, playlistId]));
+  };
+
+  const handleCreatePlaylist = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPlaylistName.trim()) {
+      onCreatePlaylist(newPlaylistName.trim());
+      setNewPlaylistName('');
+      setShowCreateForm(false);
+    }
+  };
+
+  if (!isOpen || !track) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white">Add to Playlist</h3>
+            <p className="text-sm text-zinc-500 truncate">
+              {track.track_title || track.title || 'Unknown Track'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {playlists.length > 0 ? (
+            playlists.map((playlist) => (
+              <button
+                key={playlist.id}
+                onClick={() => handleAddToPlaylist(playlist.id)}
+                disabled={addedToPlaylists.has(playlist.id) || isLoading}
+                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
+                  addedToPlaylists.has(playlist.id)
+                    ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
+                    : 'border-zinc-200 dark:border-zinc-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    addedToPlaylists.has(playlist.id)
+                      ? 'bg-green-100 dark:bg-green-900/30'
+                      : 'bg-indigo-100 dark:bg-indigo-900/30'
+                  }`}>
+                    {addedToPlaylists.has(playlist.id) ? (
+                      <Check size={16} className="text-green-600 dark:text-green-400" />
+                    ) : (
+                      <Plus size={16} className="text-indigo-600 dark:text-indigo-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-zinc-900 dark:text-white">
+                      {playlist.name}
+                    </h4>
+                    <p className="text-xs text-zinc-500">
+                      {playlist.trackCount} tracks
+                    </p>
+                  </div>
+                </div>
+                {addedToPlaylists.has(playlist.id) && (
+                  <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                    Added
+                  </span>
+                )}
+              </button>
+            ))
+          ) : (
+            <div className="py-8 text-center text-zinc-500">
+              <p className="text-sm">No playlists yet.</p>
+            </div>
+          )}
+
+          <div className="pt-4 border-t border-zinc-200 dark:border-zinc-700">
+            {!showCreateForm ? (
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="w-full flex items-center justify-center space-x-2 p-3 rounded-xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 text-zinc-500 hover:border-indigo-400 hover:text-indigo-600 transition-all"
+              >
+                <FolderPlus size={16} />
+                <span className="font-medium">Create New Playlist</span>
+              </button>
+            ) : (
+              <form onSubmit={handleCreatePlaylist} className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Playlist name"
+                  value={newPlaylistName}
+                  onChange={(e) => setNewPlaylistName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:border-indigo-500"
+                  autoFocus
+                />
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="submit"
+                    disabled={!newPlaylistName.trim() || isLoading}
+                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  >
+                    {isLoading ? 'Creating...' : 'Create & Add'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(false)}
+                    className="px-4 py-2 text-zinc-500 hover:text-zinc-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const getArtistName = (artist: BackingTrack['artist']): string => {
@@ -67,10 +235,14 @@ const TrackPreviewRow: React.FC<{
   track: BackingTrack, 
   isPlaying: boolean, 
   artistName?: string,
-  onPlay: (track: BackingTrack) => void
-}> = ({ track, isPlaying, artistName, onPlay }) => (
-  <div onClick={() => onPlay(track)} className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
-    <div className="flex items-center space-x-4">
+  onPlay: (track: BackingTrack) => void,
+  onAddToPlaylist: (track: BackingTrack) => void
+}> = ({ track, isPlaying, artistName, onPlay, onAddToPlaylist }) => (
+  <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
+    <div 
+      onClick={() => onPlay(track)} 
+      className="flex items-center space-x-4 flex-1 cursor-pointer"
+    >
       <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
         <Image 
           src={'/background-placeholder.jpg'} 
@@ -93,6 +265,16 @@ const TrackPreviewRow: React.FC<{
       </div>
     </div>
     <div className="flex items-center space-x-6">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onAddToPlaylist(track);
+        }}
+        className="opacity-0 group-hover:opacity-100 p-2 rounded-lg text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
+        title="Add to playlist"
+      >
+        <Plus size={16} />
+      </button>
       <div className={`transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
         {isPlaying ? (
           <div className="flex items-center space-x-1">
@@ -119,11 +301,11 @@ export default function Artists() {
   const [artistBios, setArtistBios] = useState<Record<number, string | null>>({});
   const [artistSearch, setArtistSearch] = useState('');
   const [searchQuery, setSearchQuery] = useState("");
-  const [loopA, setLoopA] = useState<number | null>(null);
-  const [loopB, setLoopB] = useState<number | null>(null);
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<BackingTrack | null>(null);
   
   // Use PlayerContext
-  const { playerState, setPlayerState, handlePlayTrack } = usePlayer();
+  const { playerState, handlePlayTrack } = usePlayer();
   
   // Pagination settings
   const artistsPerPage = 9;
@@ -138,6 +320,9 @@ export default function Artists() {
     selectedArtistId?.toString() || '',
     { skip: !selectedArtistId }
   );
+  const { data: playlists = [], refetch: refetchPlaylists } = useGetPlaylistQuery();
+  const [addTrackToPlaylist, { isLoading: isAddingToPlaylist }] = useAddTrackToPlaylistMutation();
+  const [createPlaylist, { isLoading: isCreatingPlaylist }] = useCreatePlaylistMutation();
   
   // Determine which data to use
   const allArtistsData = searchQuery.trim() ? searchResults : allArtists;
@@ -205,7 +390,6 @@ export default function Artists() {
     paginatedArtists.forEach((artist) => fetchImageFor(artist.id, artist.name ?? null));
   }, [paginatedArtists]);
 
-  // Audio player state
   // Handle track preview play using PlayerContext
   const handlePreviewPlay = (track: BackingTrack) => {
     // Ensure the track has the required properties for AudioPlayer
@@ -215,6 +399,46 @@ export default function Artists() {
       coverUrl: '/background-placeholder.jpg' // Default cover image
     };
     handlePlayTrack(enhancedTrack);
+  };
+
+  // Handle add to playlist
+  const handleAddToPlaylist = (track: BackingTrack) => {
+    setSelectedTrack(track);
+    setShowPlaylistModal(true);
+  };
+
+  // Handle adding track to existing playlist
+  const handleAddTrackToExistingPlaylist = async (playlistId: number) => {
+    if (!selectedTrack) return;
+    
+    try {
+      await addTrackToPlaylist({
+        playlistId,
+        trackId: Number(selectedTrack.id)
+      }).unwrap();
+      // You could add a success toast here
+    } catch (error) {
+      console.error('Failed to add track to playlist:', error);
+      // You could add an error toast here
+    }
+  };
+
+  // Handle creating new playlist and adding track
+  const handleCreatePlaylistWithTrack = async (name: string) => {
+    if (!selectedTrack) return;
+    
+    try {
+      const newPlaylist = await createPlaylist({ name }).unwrap();
+      await addTrackToPlaylist({
+        playlistId: newPlaylist.id,
+        trackId: Number(selectedTrack.id)
+      }).unwrap();
+      refetchPlaylists();
+      // You could add a success toast here
+    } catch (error) {
+      console.error('Failed to create playlist or add track:', error);
+      // You could add an error toast here
+    }
   };
 
   return (
@@ -451,6 +675,7 @@ export default function Artists() {
                       artistName={selectedArtist?.name || undefined}
                       isPlaying={playerState.currentTrack?.id === track.id && playerState.isPlaying}
                       onPlay={handlePreviewPlay}
+                      onAddToPlaylist={handleAddToPlaylist}
                     />
                   ))}
                 </div>
@@ -463,6 +688,19 @@ export default function Artists() {
           </div>
         )}
       </section>
+
+      <AddToPlaylistModal
+        isOpen={showPlaylistModal}
+        onClose={() => {
+          setShowPlaylistModal(false);
+          setSelectedTrack(null);
+        }}
+        track={selectedTrack}
+        onAddToPlaylist={handleAddTrackToExistingPlaylist}
+        onCreatePlaylist={handleCreatePlaylistWithTrack}
+        playlists={playlists}
+        isLoading={isAddingToPlaylist || isCreatingPlaylist}
+      />
     </>
   )
 }

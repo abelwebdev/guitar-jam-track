@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react';
+import Image from "next/image";
 import { 
   ListMusic, Disc, FolderPlus, Trash2, ChevronLeft, 
   Clock, Music, Play, Pause, X, Edit3
@@ -87,66 +88,58 @@ const TrackRow: React.FC<{
     return typeof artist === 'string' ? artist : 'Unknown Artist';
   };
 
-  const formatDuration = (seconds: number = 180) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <div className={`group flex items-center px-4 py-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-900/30 transition-all ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
-      <div className="w-10 flex-shrink-0 text-center">
-        <button
-          onClick={onPlay}
-          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-            isPlaying 
-              ? 'bg-indigo-600 text-white' 
-              : 'text-zinc-400 hover:bg-indigo-600 hover:text-white group-hover:opacity-100'
-          }`}
-        >
-          {isPlaying ? <Pause size={14} fill="white" /> : <Play size={14} fill="currentColor" className="ml-0.5" />}
-        </button>
-      </div>
-      
-      <div className="flex-1 min-w-0 pr-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
-            <Music size={16} className="text-zinc-400" />
-          </div>
-          <div className="min-w-0">
-            <h4 className={`text-sm font-bold truncate ${isPlaying ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'}`}>
-              {track.track_title || track.title || 'Unknown Track'}
-            </h4>
-            <p className="text-xs text-zinc-500 truncate">
-              {getArtistName(track.artist)}
-            </p>
+    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
+      <div 
+        onClick={onPlay} 
+        className="flex items-center space-x-4 flex-1 cursor-pointer"
+      >
+        <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
+          <Image 
+            src={'/background-placeholder.jpg'} 
+            alt={track.track_title || track.title || 'Track'}
+            width={48}
+            height={48}
+            className="w-full h-full object-cover" 
+          />
+          <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
+            {isPlaying ? <Pause size={16} fill="white" className="text-white" /> : <Play size={16} fill="white" className="text-white ml-0.5" />}
           </div>
         </div>
+        <div className="text-left">
+          <h4 className={`text-sm font-bold mb-0.5 ${isPlaying ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'}`}>
+            {track.track_title || track.title || 'Unknown Track'}
+          </h4>
+          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+            {getArtistName(track.artist)}
+          </p>
+        </div>
       </div>
-      
-      <div className="hidden lg:flex w-32 flex-shrink-0">
-        <span className="text-xs text-zinc-500">Rock</span>
-      </div>
-      
-      <div className="hidden md:flex w-24 flex-shrink-0 justify-center">
-        <span className="text-xs text-zinc-500">C</span>
-      </div>
-      
-      <div className="hidden sm:flex w-20 flex-shrink-0 justify-center">
-        <span className="text-xs text-zinc-500">120</span>
-      </div>
-      
-      <div className="w-20 flex-shrink-0 text-center">
-        <span className="text-xs text-zinc-500">{formatDuration()}</span>
-      </div>
-      
-      <div className="w-[120px] flex-shrink-0 flex items-center justify-end space-x-2">
+      <div className="flex items-center space-x-6">
         <button
-          onClick={onRemove}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove();
+          }}
+          className="opacity-0 group-hover:opacity-100 p-2 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+          title="Remove from playlist"
         >
-          <X size={14} />
+          <X size={16} />
         </button>
+        <div className={`transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+          {isPlaying ? (
+            <div className="flex items-center space-x-1">
+              <div className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0ms', animationDuration: '800ms' }}></div>
+              <div className="w-1 h-4 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '200ms', animationDuration: '800ms' }}></div>
+              <div className="w-1 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '400ms', animationDuration: '800ms' }}></div>
+              <div className="w-1 h-5 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '600ms', animationDuration: '800ms' }}></div>
+            </div>
+          ) : (
+            <button className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-indigo-600">
+              Play
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -297,7 +290,6 @@ const CreatePlaylistModal: React.FC<{
 
 export default function PlaylistsPage() {
   const { playerState, handlePlayTrack } = usePlayer();
-  
   // API queries and mutations
   const { data: playlists = [], isLoading: playlistsLoading, refetch: refetchPlaylists } = useGetPlaylistQuery();
   const [createPlaylist, { isLoading: isCreating }] = useCreatePlaylistMutation();
@@ -482,16 +474,7 @@ export default function PlaylistsPage() {
               ))}
             </div>
           ) : playlistTracks.length > 0 ? (
-            <div className="space-y-1">
-              <div className="flex items-center px-4 py-2 border-b border-zinc-100 dark:border-zinc-800 mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                <div className="w-10 flex-shrink-0 text-center">#</div>
-                <div className="flex-1 min-w-0 pr-4">Title</div>
-                <div className="hidden lg:flex w-32 flex-shrink-0">Genre</div>
-                <div className="hidden md:flex w-24 flex-shrink-0 text-center justify-center">Key</div>
-                <div className="hidden sm:flex w-20 flex-shrink-0 text-center justify-center">Tempo</div>
-                <div className="w-20 flex-shrink-0 text-center"><Clock size={12} className="mx-auto" /></div>
-                <div className="w-[120px] flex-shrink-0"></div>
-              </div>
+            <div className="space-y-4">
               {playlistTracks.map((track: BackingTrack, idx: number) => (
                 <TrackRow
                   key={track.id}
