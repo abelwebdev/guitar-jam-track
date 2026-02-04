@@ -22,6 +22,7 @@ model BackingTrack {
   track_url   String?
   artist      Artist?         @relation(fields: [artist_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   playlists   PlaylistTrack[]
+  favorites   Favorite[]
 }
 
 model Users {
@@ -35,6 +36,7 @@ model Users {
   created_at       DateTime?  @default(now()) @db.Timestamp(6)
   updated_at       DateTime?  @db.Timestamp(6)
   playlists        Playlist[]
+  favorites        Favorite[]
 }
 
 model Playlist {
@@ -54,4 +56,15 @@ model PlaylistTrack {
   track      BackingTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
 
   @@unique([playlistId, trackId])
+}
+
+model Favorite {
+  id        Int          @id @default(autoincrement())
+  userId    Int
+  trackId   Int
+  createdAt DateTime     @default(now()) @db.Timestamp(6)
+  user      Users        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track     BackingTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trackId])
 }

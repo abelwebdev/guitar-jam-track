@@ -39,6 +39,13 @@ type PlaylistTrack = {
   playlistId: number;
   trackId: number;
 };
+type Favorite = {
+  id: number;
+  userId: number;
+  trackId: number;
+  createdAt: string;
+  track?: BackingTrack;
+};
 type User = {
   id: number;
   email: string;
@@ -168,7 +175,28 @@ export const api = createApi({
     getTracksByArtist: builder.query<BackingTrack[], string>({
       query: (id) => `/artisttracks?id=${encodeURIComponent(id)}`
     }),
+    getFavorites: builder.query<BackingTrack[], void>({
+      query: () => '/favorites',
+      providesTags: ['Favorite']
+    }),
+    addToFavorites: builder.mutation<{ id: number; message: string; track: BackingTrack }, { trackId: number }>({
+      query: ({ trackId }) => ({
+        url: '/favorites',
+        method: 'POST',
+        body: { trackId }
+      }),
+      invalidatesTags: ['Favorite']
+    }),
+    removeFromFavorites: builder.mutation<{ message: string }, { trackId: number }>({
+      query: ({ trackId }) => ({
+        url: '/favorites',
+        method: 'DELETE',
+        body: { trackId }
+      }),
+      invalidatesTags: ['Favorite']
+    }),
   }),
+  tagTypes: ['Favorite']
 });
 
 export const { 
@@ -191,4 +219,7 @@ export const {
   useUpdatePlaylistMutation,
   useRemoveTracksFromPlaylistMutation,
   useGetTracksByArtistQuery,
+  useGetFavoritesQuery,
+  useAddToFavoritesMutation,
+  useRemoveFromFavoritesMutation,
 } = api;
