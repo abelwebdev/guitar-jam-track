@@ -2,9 +2,10 @@
 
 import React, { useState, useMemo } from 'react';
 import { Heart, Clock } from 'lucide-react';
-import { BackingTrack, PlayerState } from '@/types/types';
+import { BackingTrack } from '@/types/types';
 import { MOCK_TRACKS, Genre } from '@/constants';
 import { useGetAllTracksQuery } from '@/services/api';
+import { usePlayer } from '@/contexts/PlayerContext';
 
 export default function FavoritesPage() {
   // API queries
@@ -27,39 +28,8 @@ export default function FavoritesPage() {
     }));
   }, [tracksData]);
 
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('riffmaster_favorites');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
-
-  const [playerState, setPlayerState] = useState<PlayerState>({
-    isPlaying: false,
-    currentTrack: null,
-    volume: 0.8,
-    playbackRate: 1.0,
-    currentTime: 0,
-    duration: 0,
-    isLooping: false,
-  });
-
-  const handlePlayTrack = (track: BackingTrack) => {
-    if (playerState.currentTrack?.id === track.id) {
-      setPlayerState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
-    } else {
-      setPlayerState(prev => ({ ...prev, currentTrack: track, isPlaying: true }));
-    }
-  };
-
-  const toggleFavorite = (track: BackingTrack) => {
-    setFavorites(prev => 
-      prev.includes(track.id.toString()) 
-        ? prev.filter(id => id !== track.id.toString()) 
-        : [...prev, track.id.toString()]
-    );
-  };
+  // Use PlayerContext instead of local state
+  const { playerState, handlePlayTrack, toggleFavorite, favorites } = usePlayer();
 
   return (
     <div className="animate-in fade-in duration-500">

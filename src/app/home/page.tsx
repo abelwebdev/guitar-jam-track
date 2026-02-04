@@ -7,9 +7,10 @@ import {
   Users
 } from 'lucide-react';
 import Image from 'next/image';
-import { BackingTrack, PlayerState } from '@/types/types';
+import { BackingTrack } from '@/types/types';
 import { MOCK_TRACKS, Genre } from '@/constants';
 import { useGetAllTracksQuery, useGetHighlightedArtistsQuery } from '@/services/api';
+import { usePlayer } from '@/contexts/PlayerContext';
 
 const TrackCard: React.FC<{ 
   track: BackingTrack; 
@@ -85,15 +86,8 @@ export default function Home() {
     return [];
   });
 
-  const [playerState, setPlayerState] = useState<PlayerState>({
-    isPlaying: false,
-    currentTrack: null,
-    volume: 0.8,
-    playbackRate: 1.0,
-    currentTime: 0,
-    duration: 0,
-    isLooping: false,
-  });
+  // Use PlayerContext instead of local state
+  const { playerState, handlePlayTrack } = usePlayer();
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -122,16 +116,13 @@ export default function Home() {
     }
   }, [history]);
 
-  const handlePlayTrack = (track: BackingTrack) => {
-    if (playerState.currentTrack?.id === track.id) {
-      setPlayerState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
-    } else {
-      setPlayerState(prev => ({ ...prev, currentTrack: track, isPlaying: true }));
-      setHistory(prev => {
-        const newHistory = prev.filter(id => id !== track.id.toString());
-        return [track.id.toString(), ...newHistory].slice(0, 12);
-      });
-    }
+  // Enhanced handlePlayTrack to also update history
+  const handlePlayTrackWithHistory = (track: BackingTrack) => {
+    handlePlayTrack(track);
+    setHistory(prev => {
+      const newHistory = prev.filter(id => id !== track.id.toString());
+      return [track.id.toString(), ...newHistory].slice(0, 12);
+    });
   };
 
   // Home Dashboard Content
@@ -161,7 +152,7 @@ export default function Home() {
                 <TrackCard 
                   key={`history-${track.id}`} 
                   track={track} 
-                  onPlay={handlePlayTrack} 
+                  onPlay={handlePlayTrackWithHistory} 
                   isPlaying={playerState.isPlaying && playerState.currentTrack?.id === track.id} 
                   isActive={playerState.currentTrack?.id === track.id}
                 />
@@ -215,7 +206,7 @@ export default function Home() {
               <TrackCard 
                 key={track.id} 
                 track={track} 
-                onPlay={handlePlayTrack} 
+                onPlay={handlePlayTrackWithHistory} 
                 isPlaying={playerState.isPlaying && playerState.currentTrack?.id === track.id} 
                 isActive={playerState.currentTrack?.id === track.id}
               />

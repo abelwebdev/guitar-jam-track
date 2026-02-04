@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useRef, useEffect, useState } from 'react';
-import { Play, Pause, Volume2, SkipBack, SkipForward, Repeat, Anchor, Gauge } from 'lucide-react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
+import { Play, Pause, Volume2, SkipBack, SkipForward, Repeat, Anchor, Gauge, X } from 'lucide-react';
 import { BackingTrack, PlayerState } from '@/types/types';
 
 // Helper to get correct track URL
@@ -110,7 +111,38 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         audioRef.current.pause();
       }
     }
-  }, [playerState.isPlaying, playerState.currentTrack, playerState.volume, playerState.playbackRate]);
+  }, [playerState.isPlaying, playerState.currentTrack, playerState.volume, playerState.playbackRate, setPlayerState]);
+
+  const handleClose = useCallback(() => {
+    setPlayerState(prev => ({ 
+      ...prev, 
+      currentTrack: null, 
+      isPlaying: false,
+      currentTime: 0,
+      duration: 0
+    }));
+  }, [setPlayerState]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle shortcuts when player is visible and no input is focused
+      if (!playerState.currentTrack || document.activeElement?.tagName === 'INPUT') return;
+      
+      switch (e.key) {
+        case 'Escape':
+          handleClose();
+          break;
+        case ' ':
+          e.preventDefault();
+          setPlayerState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [playerState.currentTrack, playerState.isPlaying, setPlayerState, handleClose]);
 
   const formatTime = (time: number) => {
     if (isNaN(time)) return "0:00";
@@ -187,7 +219,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-md md:shadow-lg shrink-0 cursor-pointer sm:cursor-default"
               onClick={() => setIsMobileExpanded(!isMobileExpanded)}
             >
-              <img src={playerState.currentTrack?.coverUrl} alt="Album" className="w-full h-full object-cover" />
+              <Image 
+                src={playerState.currentTrack?.coverUrl || '/background-placeholder.jpg'} 
+                alt="Album cover" 
+                width={64} 
+                height={64} 
+                className="w-full h-full object-cover" 
+                unoptimized={playerState.currentTrack?.coverUrl?.startsWith('http')}
+              />
             </div>
             <div className="min-w-0 flex-1 text-left">
               <h4 className="text-[10px] sm:text-[11px] md:text-sm font-black text-zinc-900 dark:text-white truncate leading-tight mb-0.5">{playerState.currentTrack?.title}</h4>
@@ -241,6 +280,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               >
                 <Repeat size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
+
+              {/* Mobile Close Button - only visible when not expanded */}
+              <button 
+                className={`${isMobileExpanded ? 'hidden' : 'block'} md:hidden p-1.5 text-zinc-400 dark:text-zinc-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all`}
+                onClick={handleClose}
+                title="Close player (Esc)"
+              >
+                <X size={16} />
+              </button>
             </div>
           </div>
 
@@ -288,6 +336,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 className="flex-1 h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-600" 
               />
             </div>
+
+            {/* Close Button */}
+            <button
+              onClick={handleClose}
+              className="p-2 text-zinc-400 dark:text-zinc-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
+              title="Close player (Esc)"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
 
@@ -339,6 +396,15 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   className="flex-1 h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-600" 
                 />
               </div>
+
+              {/* Close Button */}
+              <button 
+                onClick={handleClose}
+                className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors"
+                title="Close player (Esc)"
+              >
+                <X size={16} />
+              </button>
 
               {/* Collapse Button */}
               <button 

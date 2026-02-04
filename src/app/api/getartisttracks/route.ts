@@ -17,14 +17,31 @@ export async function GET(req: Request) {
 
     const artist = await prisma.artist.findUnique({
       where: { id: artistId },
-      include: { backing_tracks: { orderBy: { id: "desc" } } }, // fixed relation name
+      include: { 
+        backing_tracks: { 
+          orderBy: { id: "desc" },
+          include: { artist: true } // Include artist information in tracks
+        } 
+      },
     });
 
     if (!artist || artist.backing_tracks.length === 0) {
       return NextResponse.json({ error: "No tracks found" }, { status: 404 });
     }
 
-    return NextResponse.json(artist.backing_tracks);
+    // Map to frontend-friendly structure
+    const result = artist.backing_tracks.map((track) => ({
+      id: track.id,
+      track_title: track.track_title,
+      track_url: track.track_url,
+      artist: {
+        id: track.artist?.id ?? artist.id,
+        artist_name: track.artist?.artist_name ?? artist.artist_name,
+        name: track.artist?.artist_name ?? artist.artist_name
+      }
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching artist tracks:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

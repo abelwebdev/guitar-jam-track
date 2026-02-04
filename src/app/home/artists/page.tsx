@@ -174,13 +174,6 @@ export default function Artists() {
     return () => clearTimeout(timer);
   }, [artistSearch]);
 
-  // Clear audio player when going back to artist list
-  useEffect(() => {
-    if (!selectedArtistId && playerState.currentTrack) {
-      setPlayerState(prev => ({ ...prev, currentTrack: null, isPlaying: false }));
-    }
-  }, [selectedArtistId, playerState.currentTrack, setPlayerState]);
-
   // Fetch artist images and bios
   useEffect(() => {
     const fetchImageFor = async (artistId: number, name: string | null) => {
@@ -385,8 +378,6 @@ export default function Artists() {
             <button 
               onClick={() => {
                 setSelectedArtistId(null);
-                // Clear audio player when going back to artist list
-                setPlayerState(prev => ({ ...prev, currentTrack: null, isPlaying: false }));
               }}
               className="flex items-center space-x-2 text-zinc-500 hover:text-indigo-600 font-black uppercase text-xs tracking-widest transition-colors"
             >

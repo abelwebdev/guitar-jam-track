@@ -3,10 +3,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Play, Pause, ChevronRight } from 'lucide-react';
 import Image from "next/image";
-import { BackingTrack, PlayerState } from '@/types/types';
+import { BackingTrack } from '@/types/types';
 import { Genre } from '@/constants';
 import { useGetAllTracksQuery } from '@/services/api';
-import AudioPlayer from '@/components/AudioPlayer';
+import { usePlayer } from '@/contexts/PlayerContext';
 
 
 const ITEMS_PER_PAGE = 12;
@@ -77,6 +77,9 @@ export default function TracksPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedGenre, setSelectedGenre] = useState<Genre | 'All'>('All');
 
+  // Use global PlayerContext
+  const { playerState, handlePlayTrack } = usePlayer();
+
   // API queries
   const { data: tracksData, isLoading: tracksLoading } = useGetAllTracksQuery();
 
@@ -87,8 +90,9 @@ export default function TracksPage() {
       ...track,
       id: track.id.toString(),
       title: track.track_title || track.title || 'Unknown Track',
-      artist: track.artist?.artist_name || track.artist?.name || 'Unknown Artist',
+      // Keep the artist as an object, don't convert to string
       audioUrl: track.track_url || '',
+      coverUrl: '/background-placeholder.jpg'
     }));
   }, [tracksData]);
 
@@ -99,21 +103,6 @@ export default function TracksPage() {
     }
     return [];
   });
-
-  // Player state for the footer player
-  const [playerState, setPlayerState] = useState<PlayerState>({
-    isPlaying: false,
-    currentTrack: null,
-    volume: 0.8,
-    playbackRate: 1.0,
-    currentTime: 0,
-    duration: 0,
-    isLooping: false,
-  });
-
-  // Loop points and speed controls
-  const [loopA, setLoopA] = useState<number | null>(null);
-  const [loopB, setLoopB] = useState<number | null>(null);
 
   const filteredTracks = useMemo(() => {
     return tracks.filter(t => {
@@ -140,22 +129,15 @@ export default function TracksPage() {
   // Reset pagination when search query changes
   useEffect(() => setCurrentPage(1), [searchQuery]);
 
-  // Handle track preview play
+  // Handle track preview play using PlayerContext
   const handlePreviewPlay = (track: BackingTrack) => {
-    if (playerState.currentTrack?.id === track.id) {
-      setPlayerState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
-    } else {
-      setPlayerState(prev => ({ 
-        ...prev, 
-        currentTrack: track, 
-        isPlaying: true,
-        currentTime: 0,
-        duration: 0
-      }));
-      // Reset loop points when changing tracks
-      setLoopA(null);
-      setLoopB(null);
-    }
+    // Ensure the track has the required properties for AudioPlayer
+    const enhancedTrack = {
+      ...track,
+      title: track.track_title || track.title || 'Unknown Track',
+      coverUrl: '/background-placeholder.jpg'
+    };
+    handlePlayTrack(enhancedTrack);
   };
 
   return (
@@ -317,15 +299,6 @@ export default function TracksPage() {
           </div>
         )}
       </div>
-
-      <AudioPlayer
-        playerState={playerState}
-        setPlayerState={setPlayerState}
-        loopA={loopA}
-        setLoopA={setLoopA}
-        loopB={loopB}
-        setLoopB={setLoopB}
-      />
     </>
   );
 }
