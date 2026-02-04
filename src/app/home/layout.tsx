@@ -12,6 +12,8 @@ import { useGetUserQuery } from "@/services/api";
 import { auth } from "@/lib/firebaseClient";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import { User } from '@/types/types';
+import AudioPlayer from "@/components/AudioPlayer";
+import { usePlayer } from "@/contexts/PlayerContext";
 
 export type DashboardView = 'home' | 'artists' | 'tracks' | 'playlists' | 'favorites' | 'tools';
 
@@ -45,7 +47,11 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [idToken, setIdToken] = useState<string | null>(null);
+  const [loopA, setLoopA] = useState<number | null>(null);
+  const [loopB, setLoopB] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { playerState, setPlayerState } = usePlayer();
 
   const { data: user, isLoading: userLoading } = useGetUserQuery(idToken!, {
     skip: !idToken,
@@ -214,6 +220,18 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
           </div>
         </main>
       </div>
+
+      {/* Global Audio Player */}
+      {playerState.currentTrack && (
+        <AudioPlayer 
+          playerState={playerState}
+          setPlayerState={setPlayerState}
+          loopA={loopA}
+          setLoopA={setLoopA}
+          loopB={loopB}
+          setLoopB={setLoopB}
+        />
+      )}
       </div>
     </div>
   );

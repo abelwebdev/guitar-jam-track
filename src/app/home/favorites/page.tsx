@@ -5,7 +5,6 @@ import { Heart, Clock } from 'lucide-react';
 import { BackingTrack, PlayerState } from '@/types/types';
 import { MOCK_TRACKS, Genre } from '@/constants';
 import { useGetAllTracksQuery } from '@/services/api';
-import TrackRow from '@/components/TrackRow';
 
 export default function FavoritesPage() {
   // API queries
@@ -82,16 +81,8 @@ export default function FavoritesPage() {
             <div className="w-[120px] flex-shrink-0"></div>
           </div>
           {tracks.filter(t => favorites.includes(t.id.toString())).map((track, idx) => (
-            <TrackRow 
-              key={track.id} 
-              index={idx}
-              track={track} 
-              onPlay={handlePlayTrack} 
-              isPlaying={playerState.isPlaying && playerState.currentTrack?.id === track.id} 
-              isActive={playerState.currentTrack?.id === track.id}
-              isFavorited={true}
-              onToggleFavorite={toggleFavorite}
-            />
+            <>
+            </>
           ))}
         </div>
       ) : (
