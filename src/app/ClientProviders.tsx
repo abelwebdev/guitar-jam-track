@@ -3,6 +3,7 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import { Provider } from "react-redux";
 import { store } from "@/store";
+import { PlayerProvider } from "@/contexts/PlayerContext";
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -13,7 +14,9 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <Provider store={store}>
-        {children}
+        <PlayerProvider>
+          {children}
+        </PlayerProvider>
       </Provider>
     </ThemeProvider>
   );
