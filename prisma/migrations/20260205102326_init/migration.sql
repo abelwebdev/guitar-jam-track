@@ -51,6 +51,16 @@ CREATE TABLE "PlaylistTrack" (
     CONSTRAINT "PlaylistTrack_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Favorite" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "trackId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Favorite_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Artist_artist_name_key" ON "Artist"("artist_name");
 
@@ -66,6 +76,9 @@ CREATE UNIQUE INDEX "Users_username_key" ON "Users"("username");
 -- CreateIndex
 CREATE UNIQUE INDEX "PlaylistTrack_playlistId_trackId_key" ON "PlaylistTrack"("playlistId", "trackId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Favorite_userId_trackId_key" ON "Favorite"("userId", "trackId");
+
 -- AddForeignKey
 ALTER TABLE "BackingTrack" ADD CONSTRAINT "BackingTrack_artist_id_fkey" FOREIGN KEY ("artist_id") REFERENCES "Artist"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
@@ -77,3 +90,9 @@ ALTER TABLE "PlaylistTrack" ADD CONSTRAINT "PlaylistTrack_playlistId_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "PlaylistTrack" ADD CONSTRAINT "PlaylistTrack_trackId_fkey" FOREIGN KEY ("trackId") REFERENCES "BackingTrack"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_trackId_fkey" FOREIGN KEY ("trackId") REFERENCES "BackingTrack"("id") ON DELETE CASCADE ON UPDATE CASCADE;

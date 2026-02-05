@@ -45,6 +45,7 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
   viewport: "width=device-width, initial-scale=1",
   themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#000000" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };
@@ -55,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body>
         <Toaster
           position="top-center"
