@@ -184,7 +184,7 @@ const getArtistName = (artist: BackingTrack['artist']): string => {
   return typeof artist === 'string' ? artist : 'Unknown Artist';
 };
 
-const TrackPreviewRow: React.FC<{ 
+const TrackPreviewRow: React.FC<{
   track: BackingTrack, 
   isPlaying: boolean, 
   onPlay: (track: BackingTrack) => void,
@@ -272,6 +272,7 @@ export default function TracksPage() {
 
   // API queries
   const { data: tracksData, isLoading: tracksLoading } = useGetAllTracksQuery();
+  console.log("tracksdata: ", tracksData);
   const { data: playlists = [], refetch: refetchPlaylists } = useGetPlaylistQuery();
   const { data: favoritesData = [] } = useGetFavoritesQuery();
   const [addTrackToPlaylist, { isLoading: isAddingToPlaylist }] = useAddTrackToPlaylistMutation();
@@ -279,14 +280,12 @@ export default function TracksPage() {
   const [addToFavorites] = useAddToFavoritesMutation();
   const [removeFromFavorites] = useRemoveFromFavoritesMutation();
 
-  // Convert API data to expected format
   const tracks = useMemo(() => {
     if (!tracksData) return [];
     return tracksData.map(track => ({
       ...track,
       id: track.id.toString(),
       title: track.track_title || track.title || 'Unknown Track',
-      // Keep the artist as an object, don't convert to string
       audioUrl: track.track_url || '',
       coverUrl: '/background-placeholder.jpg'
     }));
@@ -386,7 +385,6 @@ export default function TracksPage() {
       }
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
-      // You could add an error toast here
     }
   };
 

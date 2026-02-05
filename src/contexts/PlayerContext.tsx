@@ -40,20 +40,7 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
     isLooping: false,
   });
 
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('riffmaster_favorites');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
-
-  // Save favorites to localStorage whenever it changes
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('riffmaster_favorites', JSON.stringify(favorites));
-    }
-  }, [favorites]);
+  const [favorites, setFavorites] = useState<string[]>([]);
 
   const handlePlayTrack = (track: BackingTrack) => {
     if (playerState.currentTrack?.id === track.id) {
