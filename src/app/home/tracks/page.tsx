@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Play, Pause, ChevronRight, Plus, Check, FolderPlus, X } from 'lucide-react';
+import { Search, Play, Pause, ChevronRight, Plus, Check, FolderPlus, X, Heart } from 'lucide-react';
 import Image from "next/image";
 import { BackingTrack } from '@/types/types';
-import { useGetAllTracksQuery, useGetPlaylistQuery, useAddTrackToPlaylistMutation, useCreatePlaylistMutation } from '@/services/api';
+import { useGetAllTracksQuery, useGetPlaylistQuery, useAddTrackToPlaylistMutation, useCreatePlaylistMutation, useGetFavoritesQuery, useAddToFavoritesMutation, useRemoveFromFavoritesMutation } from '@/services/api';
 import { usePlayer } from '@/contexts/PlayerContext';
 
 const ITEMS_PER_PAGE = 12;
@@ -188,8 +188,10 @@ const TrackPreviewRow: React.FC<{
   track: BackingTrack, 
   isPlaying: boolean, 
   onPlay: (track: BackingTrack) => void,
-  onAddToPlaylist: (track: BackingTrack) => void
-}> = ({ track, isPlaying, onPlay, onAddToPlaylist }) => (
+  onAddToPlaylist: (track: BackingTrack) => void,
+  onToggleFavorite: (track: BackingTrack) => void,
+  isFavorite: boolean
+}> = ({ track, isPlaying, onPlay, onAddToPlaylist, onToggleFavorite, isFavorite }) => (
   <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
     <div 
       onClick={() => onPlay(track)} 
@@ -217,6 +219,20 @@ const TrackPreviewRow: React.FC<{
       </div>
     </div>
     <div className="flex items-center space-x-6">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleFavorite(track);
+        }}
+        className={`opacity-0 group-hover:opacity-100 p-2 rounded-lg transition-all ${
+          isFavorite 
+            ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' 
+            : 'text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+        } ${isFavorite ? 'opacity-100' : ''}`}
+        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      >
+        <Heart size={16} fill={isFavorite ? "currentColor" : "none"} />
+      </button>
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -257,8 +273,11 @@ export default function TracksPage() {
   // API queries
   const { data: tracksData, isLoading: tracksLoading } = useGetAllTracksQuery();
   const { data: playlists = [], refetch: refetchPlaylists } = useGetPlaylistQuery();
+  const { data: favoritesData = [] } = useGetFavoritesQuery();
   const [addTrackToPlaylist, { isLoading: isAddingToPlaylist }] = useAddTrackToPlaylistMutation();
   const [createPlaylist, { isLoading: isCreatingPlaylist }] = useCreatePlaylistMutation();
+  const [addToFavorites] = useAddToFavoritesMutation();
+  const [removeFromFavorites] = useRemoveFromFavoritesMutation();
 
   // Convert API data to expected format
   const tracks = useMemo(() => {
@@ -272,6 +291,11 @@ export default function TracksPage() {
       coverUrl: '/background-placeholder.jpg'
     }));
   }, [tracksData]);
+
+  // Create a set of favorite track IDs for quick lookup
+  const favoriteTrackIds = useMemo(() => {
+    return new Set(favoritesData.map(fav => fav.id.toString()));
+  }, [favoritesData]);
 
   const filteredTracks = useMemo(() => {
     return tracks.filter(t => {
@@ -349,6 +373,23 @@ export default function TracksPage() {
     }
   };
 
+  // Handle toggle favorite
+  const handleToggleFavorite = async (track: BackingTrack) => {
+    const trackId = Number(track.id);
+    const isFavorite = favoriteTrackIds.has(track.id.toString());
+    
+    try {
+      if (isFavorite) {
+        await removeFromFavorites({ trackId }).unwrap();
+      } else {
+        await addToFavorites({ trackId }).unwrap();
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      // You could add an error toast here
+    }
+  };
+
   return (
     <>
       <div className="animate-in fade-in duration-500">
@@ -398,6 +439,8 @@ export default function TracksPage() {
                 isPlaying={playerState.currentTrack?.id === track.id && playerState.isPlaying}
                 onPlay={handlePreviewPlay}
                 onAddToPlaylist={handleAddToPlaylist}
+                onToggleFavorite={handleToggleFavorite}
+                isFavorite={favoriteTrackIds.has(track.id.toString())}
               />
             ))
           ) : (
