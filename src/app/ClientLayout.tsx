@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { Menu, X } from 'lucide-react';
 import { usePathname } from "next/navigation";
+import { Audiowide } from 'next/font/google'
+const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
 
 export default function ClientLayout({
   children,
@@ -37,7 +39,7 @@ export default function ClientLayout({
                   />
                 </Link>
               </div>
-              <span className="text-lg sm:text-xl font-black tracking-tighter uppercase text-zinc-900 dark:text-white">
+              <span className={`${audiowide.className} text-lg sm:text-xl font-black tracking-tighter uppercase text-zinc-900 dark:text-white`}>
                 Guitar JamTrack
               </span>
             </div>

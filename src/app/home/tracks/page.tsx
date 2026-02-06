@@ -414,7 +414,8 @@ export default function TracksPage() {
       <div className="pt-8 pb-24 px-6 md:px-12 animate-in fade-in duration-500">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 space-y-6 md:space-y-0">
           <div>
-            <h2 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight mb-2 uppercase tracking-tighter">Library</h2>
+            {/* <h2 className="">Track Catalog</h2> */}
+            <h2 className="text-4xl md:text-6xl font-black text-zinc-900 dark:text-white tracking-tighter mb-4">Track Catalog</h2>
             <p className="text-zinc-500 text-sm font-medium">Browse the full catalog of tracks.</p>
           </div>
           <div className="relative w-full md:w-80 group">

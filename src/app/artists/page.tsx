@@ -345,8 +345,8 @@ export default function ArtistsPage() {
           <>
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 space-y-6 md:space-y-0">
               <div className="text-left">
-                <h2 className="text-4xl md:text-6xl font-black text-zinc-900 dark:text-white tracking-tighter mb-4">The Collective</h2>
-                <p className="text-zinc-500 text-lg max-w-lg">Meet the master instructors behind every single session.</p>
+                <h2 className="text-4xl md:text-6xl font-black text-zinc-900 dark:text-white tracking-tighter mb-4">Artist Catalog</h2>
+                <p className="text-zinc-500 text-lg max-w-lg">Backing tracks by artist</p>
               </div>
               <div className="relative w-full md:w-80 group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 group-hover:text-indigo-600 transition-colors" size={18} />
@@ -506,7 +506,7 @@ export default function ArtistsPage() {
               className="flex items-center space-x-2 text-zinc-500 hover:text-indigo-600 font-black uppercase text-xs tracking-widest transition-colors"
             >
               <ArrowLeft size={16} />
-              <span>Back to collective</span>
+              <span>Back to artist catalog</span>
             </button>
 
             <div className="flex flex-col md:flex-row items-start md:items-center gap-12">
@@ -539,7 +539,7 @@ export default function ArtistsPage() {
                 <p className="text-zinc-500 dark:text-zinc-400 text-lg max-w-2xl leading-relaxed">
                   {selectedArtist && artistBios[selectedArtist.id] 
                     ? artistBios[selectedArtist.id]?.slice(0, 300) + (artistBios[selectedArtist.id]!.length > 300 ? '...' : '')
-                    : 'Professional musician and instructor with years of experience creating high-quality backing tracks for guitarists of all levels.'
+                    : ''
                   }
                 </p>
               </div>

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
+import { Audiowide } from 'next/font/google'
+const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -72,7 +74,9 @@ export default function Header() {
             <Link href="/" className="block font-semibold text-lg hover:text-indigo-400" onClick={() => setMobileOpen(false)}>
               <span className="inline-flex items-center justify-center gap-2">
                 <Image src="/guitar-jam-track.png" alt="Guitar JamTrack Logo" width={28} height={28} className="h-7 w-7 brightness-0 invert" />
-                Guitar JamTrack
+                  <span className={`${audiowide.className} font-black tracking-tighter text-lg uppercase text-zinc-900 dark:text-white`}>
+                    Guitar JamTrack
+                  </span>
               </span>
             </Link>
             <Link href="/tracks" className="block hover:text-indigo-400" onClick={() => setMobileOpen(false)}>

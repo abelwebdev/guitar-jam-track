@@ -103,6 +103,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
       tools: '/home/tools'
     };
     router.push(routes[view]);
+    setIsSidebarOpen(false); // Close sidebar after navigation
   };
 
   useEffect(() => {
