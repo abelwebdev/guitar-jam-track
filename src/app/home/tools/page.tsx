@@ -181,7 +181,7 @@ export default function ToolsPage() {
   };
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-12">
+    <div className="pt-8 pb-24 px-6 md:px-12 animate-in fade-in duration-500 space-y-12">
       <div className="flex items-center space-x-1 p-1 bg-zinc-100 dark:bg-zinc-900/50 backdrop-blur-md rounded-2xl border border-zinc-200 dark:border-zinc-800 w-full sm:w-fit overflow-x-auto scrollbar-hide shadow-sm">
         <button
           onClick={() => setActiveToolTab("metronome")}

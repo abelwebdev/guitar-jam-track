@@ -397,7 +397,7 @@ export default function PlaylistsPage() {
   }
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <div className="pt-8 pb-24 px-6 md:px-12 animate-in fade-in duration-500">
       {!selectedPlaylistId ? (
         <>
           <div className="flex items-center justify-between mb-10">

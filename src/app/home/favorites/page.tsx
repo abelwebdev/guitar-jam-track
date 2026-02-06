@@ -115,7 +115,7 @@ export default function FavoritesPage() {
   };
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <div className="pt-8 pb-24 px-6 md:px-12 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 space-y-6 md:space-y-0">
         <div>
           <h2 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight mb-2 uppercase tracking-tighter">Favorites</h2>

@@ -3,7 +3,6 @@
 import React, { useRef } from 'react';
 import { Play, Pause, Volume2 } from 'lucide-react';
 import Image from 'next/image';
-import { useGetAllTracksQuery, useGetHighlightedArtistsQuery } from '@/services/api';
 import { usePlayer } from '@/contexts/PlayerContext';
 
 export default function Home() {

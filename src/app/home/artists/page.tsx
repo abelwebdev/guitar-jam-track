@@ -239,80 +239,102 @@ const TrackPreviewRow: React.FC<{
   onAddToPlaylist: (track: BackingTrack) => void,
   onToggleFavorite: (track: BackingTrack) => void,
   isFavorite: boolean
-}> = ({ track, isPlaying, artistName, onPlay, onAddToPlaylist, onToggleFavorite, isFavorite }) => (
-  <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
-    <div 
-      onClick={() => onPlay(track)} 
-      className="flex items-center space-x-4 flex-1 cursor-pointer"
-    >
-      <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
-        <Image 
-          src={'/background-placeholder.jpg'} 
-          alt={track.track_title || track.title || 'Track'}
-          width={48}
-          height={48}
-          className="w-full h-full object-cover" 
-        />
-        <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
-          {isPlaying ? <Pause size={16} fill="white" className="text-white" /> : <Play size={16} fill="white" className="text-white ml-0.5" />}
+}> = ({ track, isPlaying, artistName, onPlay, onAddToPlaylist, onToggleFavorite, isFavorite }) => {
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+
+  useEffect(() => {
+    if (titleRef.current && containerRef.current) {
+      const isOverflowing = titleRef.current.scrollWidth > containerRef.current.clientWidth;
+      setShouldAnimate(isOverflowing);
+    }
+  }, [track.track_title, track.title]);
+
+  const trackTitle = track.track_title || track.title || 'Unknown Track';
+
+  return (
+    <div className={`flex items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
+      <div 
+        onClick={() => onPlay(track)} 
+        className="flex items-center space-x-3 sm:space-x-4 flex-1 cursor-pointer min-w-0"
+      >
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden relative group/play shrink-0">
+          <Image 
+            src={'/background-placeholder.jpg'} 
+            alt={trackTitle}
+            width={48}
+            height={48}
+            className="w-full h-full object-cover" 
+          />
+          <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
+            {isPlaying ? <Pause size={14} fill="white" className="text-white sm:w-4 sm:h-4" /> : <Play size={14} fill="white" className="text-white ml-0.5 sm:w-4 sm:h-4" />}
+          </div>
+        </div>
+        <div className="text-left min-w-0 flex-1">
+          <div ref={containerRef} className="overflow-hidden relative">
+            <h4 
+              ref={titleRef}
+              className={`text-xs sm:text-sm font-bold mb-0.5 whitespace-nowrap inline-block ${isPlaying ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'} ${shouldAnimate && isPlaying ? 'animate-marquee' : shouldAnimate ? 'group-hover:animate-marquee' : ''}`}
+            >
+              {trackTitle}
+              {shouldAnimate && <span className="inline-block px-8">{trackTitle}</span>}
+            </h4>
+          </div>
+          <p className="text-[9px] sm:text-[10px] text-zinc-500 font-bold uppercase tracking-widest truncate">
+            {artistName || getArtistName(track.artist)}
+          </p>
         </div>
       </div>
-      <div className="text-left">
-        <h4 className={`text-sm font-bold mb-0.5 ${isPlaying ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'}`}>
-          {track.track_title || track.title || 'Unknown Track'}
-        </h4>
-        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-          {artistName || getArtistName(track.artist)}
-        </p>
+      <div className="flex items-center space-x-1 sm:space-x-3 md:space-x-6 shrink-0">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(track);
+          }}
+          className={`opacity-0 group-hover:opacity-100 p-1.5 sm:p-2 rounded-lg transition-all ${
+            isFavorite 
+              ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' 
+              : 'text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+          } ${isFavorite ? 'opacity-100' : ''}`}
+          title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+        >
+          <Heart size={14} className="sm:w-4 sm:h-4" fill={isFavorite ? "currentColor" : "none"} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddToPlaylist(track);
+          }}
+          className="opacity-0 group-hover:opacity-100 p-1.5 sm:p-2 rounded-lg text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
+          title="Add to playlist"
+        >
+          <Plus size={14} className="sm:w-4 sm:h-4" />
+        </button>
+        <div className={`transition-opacity hidden sm:block ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+          {isPlaying ? (
+            <div className="flex items-center space-x-1">
+              <div className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0ms', animationDuration: '800ms' }}></div>
+              <div className="w-1 h-4 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '200ms', animationDuration: '800ms' }}></div>
+              <div className="w-1 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '400ms', animationDuration: '800ms' }}></div>
+              <div className="w-1 h-5 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '600ms', animationDuration: '800ms' }}></div>
+            </div>
+          ) : (
+            <button className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-indigo-600">
+              Play
+            </button>
+          )}
+        </div>
       </div>
     </div>
-    <div className="flex items-center space-x-6">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleFavorite(track);
-        }}
-        className={`opacity-0 group-hover:opacity-100 p-2 rounded-lg transition-all ${
-          isFavorite 
-            ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' 
-            : 'text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-        } ${isFavorite ? 'opacity-100' : ''}`}
-        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-      >
-        <Heart size={16} fill={isFavorite ? "currentColor" : "none"} />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onAddToPlaylist(track);
-        }}
-        className="opacity-0 group-hover:opacity-100 p-2 rounded-lg text-zinc-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all"
-        title="Add to playlist"
-      >
-        <Plus size={16} />
-      </button>
-      <div className={`transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-        {isPlaying ? (
-          <div className="flex items-center space-x-1">
-            <div className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0ms', animationDuration: '800ms' }}></div>
-            <div className="w-1 h-4 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '200ms', animationDuration: '800ms' }}></div>
-            <div className="w-1 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '400ms', animationDuration: '800ms' }}></div>
-            <div className="w-1 h-5 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '600ms', animationDuration: '800ms' }}></div>
-          </div>
-        ) : (
-          <button className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-indigo-600">
-            Play
-          </button>
-        )}
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 
 export default function Artists() {
   const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [artistTracksPage, setArtistTracksPage] = useState(1);
   const [artistImages, setArtistImages] = useState<Record<number, string | null>>({});
   const [artistBios, setArtistBios] = useState<Record<number, string | null>>({});
   const [artistSearch, setArtistSearch] = useState('');
@@ -322,9 +344,9 @@ export default function Artists() {
   
   // Use PlayerContext
   const { playerState, handlePlayTrack } = usePlayer();
-  
   // Pagination settings
   const artistsPerPage = 9;
+  const tracksPerPage = 12;
   
   // RTK Query hooks
   const { data: allArtists, isLoading: isAllArtistsLoading, error: isAllArtistsError } = useGetAllArtistsQuery();
@@ -359,6 +381,14 @@ export default function Artists() {
   // Find selected artist
   const selectedArtist = allArtistsData?.find(artist => artist.id === selectedArtistId);
 
+  // Pagination for artist tracks
+  const totalArtistTracks = artistTracks?.length || 0;
+  const totalArtistTracksPages = Math.max(1, Math.ceil(totalArtistTracks / tracksPerPage));
+  const validArtistTracksPage = Math.min(artistTracksPage, totalArtistTracksPages);
+  const artistTracksStartIndex = (validArtistTracksPage - 1) * tracksPerPage;
+  const artistTracksEndIndex = artistTracksStartIndex + tracksPerPage;
+  const paginatedArtistTracks = artistTracks?.slice(artistTracksStartIndex, artistTracksEndIndex) || [];
+
   // Create a set of favorite track IDs for quick lookup
   const favoriteTrackIds = useMemo(() => {
     return new Set(favoritesData.map(fav => fav.id.toString()));
@@ -369,11 +399,19 @@ export default function Artists() {
   const handleNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
   const handlePageClick = (page: number) => setCurrentPage(page);
 
+  // Artist tracks pagination handlers
+  const handleArtistTracksPrevPage = () => setArtistTracksPage(prev => Math.max(1, prev - 1));
+  const handleArtistTracksNextPage = () => setArtistTracksPage(prev => Math.min(totalArtistTracksPages, prev + 1));
+  const handleArtistTracksPageClick = (page: number) => setArtistTracksPage(page);
+
   // Track fetched artist IDs to avoid duplicate requests
   const fetchedIdsRef = useRef<Set<number>>(new Set());
 
   // Reset pagination when search query changes
   useEffect(() => setCurrentPage(1), [searchQuery]);
+
+  // Reset artist tracks pagination when artist changes
+  useEffect(() => setArtistTracksPage(1), [selectedArtistId]);
 
   // Update search query with debounce
   useEffect(() => {
@@ -484,7 +522,7 @@ export default function Artists() {
 
   return (
     <>
-      <section className="pt-32 pb-24 px-6 md:px-12 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <section className="pt-8 pb-24 px-6 md:px-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
         {!selectedArtistId ? (
           <>
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 space-y-6 md:space-y-0">
@@ -688,17 +726,22 @@ export default function Artists() {
 
             <div className="pt-16 border-t border-zinc-200 dark:border-zinc-900">
               <div className="flex items-center justify-between mb-10">
-                <h3 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">
-                  Backing Tracks By - {selectedArtist?.name}
-                </h3>
+                <div>
+                  <h3 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">
+                    Backing Tracks
+                  </h3>
+                  <p className="text-zinc-500 text-sm font-medium mt-1">
+                    {totalArtistTracks} tracks by {selectedArtist?.name}
+                  </p>
+                </div>
               </div>
               
               {isArtistTracksLoading ? (
-                <div className="space-y-4">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="animate-pulse flex items-center justify-between p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
+                <div className="space-y-3">
+                  {[...Array(tracksPerPage)].map((_, i) => (
+                    <div key={i} className="animate-pulse flex items-center justify-between p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40">
+                      <div className="flex items-center space-x-3 sm:space-x-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
                         <div className="space-y-2">
                           <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-700 rounded" />
                           <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded" />
@@ -708,20 +751,124 @@ export default function Artists() {
                   ))}
                 </div>
               ) : artistTracks && artistTracks.length > 0 ? (
-                <div className="space-y-4">
-                  {artistTracks.map(track => (
-                    <TrackPreviewRow 
-                      key={track.id} 
-                      track={track} 
-                      artistName={selectedArtist?.name || undefined}
-                      isPlaying={playerState.currentTrack?.id === track.id && playerState.isPlaying}
-                      onPlay={handlePreviewPlay}
-                      onAddToPlaylist={handleAddToPlaylist}
-                      onToggleFavorite={handleToggleFavorite}
-                      isFavorite={favoriteTrackIds.has(track.id.toString())}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="space-y-3">
+                    {paginatedArtistTracks.map(track => (
+                      <TrackPreviewRow 
+                        key={track.id} 
+                        track={track} 
+                        artistName={selectedArtist?.name || undefined}
+                        isPlaying={playerState.currentTrack?.id === track.id && playerState.isPlaying}
+                        onPlay={handlePreviewPlay}
+                        onAddToPlaylist={handleAddToPlaylist}
+                        onToggleFavorite={handleToggleFavorite}
+                        isFavorite={favoriteTrackIds.has(track.id.toString())}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalArtistTracksPages > 1 && (
+                    <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-6">
+                      {/* Page Info */}
+                      <div className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                        Showing {artistTracksStartIndex + 1}-{Math.min(artistTracksEndIndex, totalArtistTracks)} of {totalArtistTracks} tracks
+                      </div>
+
+                      {/* Pagination Controls */}
+                      <div className="flex items-center justify-center gap-2 sm:gap-4">
+                        <button
+                          type="button"
+                          onClick={handleArtistTracksPrevPage}
+                          disabled={validArtistTracksPage === 1}
+                          className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                        >
+                          <ChevronRight size={14} className="rotate-180 sm:mr-2" />
+                          <span className="hidden sm:inline">Prev</span>
+                        </button>
+                        
+                        <div className="flex items-center space-x-1 sm:space-x-2">
+                          {/* Page numbers - responsive count */}
+                          {Array.from({ length: Math.min(3, totalArtistTracksPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalArtistTracksPages <= 3) {
+                              pageNum = i + 1;
+                            } else if (validArtistTracksPage <= 2) {
+                              pageNum = i + 1;
+                            } else if (validArtistTracksPage >= totalArtistTracksPages - 1) {
+                              pageNum = totalArtistTracksPages - 2 + i;
+                            } else {
+                              pageNum = validArtistTracksPage - 1 + i;
+                            }
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => handleArtistTracksPageClick(pageNum)}
+                                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 hover:scale-110 ${
+                                  validArtistTracksPage === pageNum
+                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
+                          
+                          {/* Show additional pages on larger screens */}
+                          <div className="hidden sm:flex items-center space-x-2">
+                            {totalArtistTracksPages > 3 && Array.from({ length: Math.min(2, totalArtistTracksPages - 3) }, (_, i) => {
+                              let pageNum;
+                              if (validArtistTracksPage <= 2) {
+                                pageNum = 4 + i;
+                              } else if (validArtistTracksPage >= totalArtistTracksPages - 1) {
+                                // Already handled in main array
+                                return null;
+                              } else {
+                                pageNum = validArtistTracksPage + 2 + i;
+                              }
+                              
+                              if (pageNum > totalArtistTracksPages) return null;
+                              
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => handleArtistTracksPageClick(pageNum)}
+                                  className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${
+                                    validArtistTracksPage === pageNum
+                                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        
+                        <button
+                          type="button"
+                          onClick={handleArtistTracksNextPage}
+                          disabled={validArtistTracksPage === totalArtistTracksPages}
+                          className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                        >
+                          <span className="hidden sm:inline">Next</span>
+                          <ChevronRight size={14} className="sm:ml-2" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Track count info for single page or no pagination */}
+                  {totalArtistTracksPages <= 1 && (
+                    <div className="mt-8 text-center">
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                        Showing all {totalArtistTracks} tracks
+                      </p>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="py-20 text-center text-zinc-400 font-bold border border-dashed border-zinc-200 dark:border-zinc-800 rounded-[2rem]">
                   No tracks found for this artist.

@@ -11,7 +11,6 @@ import { Toaster } from "sonner";
 import { useGetUserQuery } from "@/services/api";
 import { auth } from "@/lib/firebaseClient";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
-import { User } from '@/types/types';
 import AudioPlayer from "@/components/AudioPlayer";
 import { usePlayer } from "@/contexts/PlayerContext";
 
@@ -47,6 +46,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [idToken, setIdToken] = useState<string | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [loopA, setLoopA] = useState<number | null>(null);
   const [loopB, setLoopB] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -62,8 +62,10 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
       if (user) {
         const token = await getIdToken(user, true);
         setIdToken(token);
+        setFirebaseUser(user);
       } else {
         setIdToken(null);
+        setFirebaseUser(null);
       }
     });
     return () => unsubscribe();
@@ -120,13 +122,6 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
       </div>
     );
   }
-
-  const mockUser: User = {
-    name: user.username || 'Guitar Player',
-    email: user.email,
-    avatar: user.img || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=100'
-  };
-
   return (
     <div className="min-h-screen">
       <Toaster
@@ -186,20 +181,28 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
               <div className="h-8 w-px bg-zinc-200 dark:bg-zinc-800 hidden sm:block mx-1.5" />
               <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center space-x-2 md:space-x-3 hover:bg-zinc-100 dark:hover:bg-white/5 p-1.5 md:p-2 rounded-2xl transition-all border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800">
                 <div className="">
-                  <Image 
-                    src={mockUser.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=100'} 
-                    alt="Avatar"
-                    width={40}
-                    height={40}
-                    className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-zinc-200 dark:border-zinc-800 shadow-sm" 
-                  />
+                  {firebaseUser?.photoURL ? (
+                    <Image 
+                      src={firebaseUser.photoURL} 
+                      alt="Profile"
+                      width={40}
+                      height={40}
+                      className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-zinc-200 dark:border-zinc-800 shadow-sm" 
+                    />
+                  ) : (
+                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-zinc-200 dark:border-zinc-800 shadow-sm bg-indigo-600 flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">
+                        {firebaseUser?.email?.charAt(0).toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </button>
               {isProfileDropdownOpen && (
                 <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-zinc-900/95 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden py-2 z-[150] animate-in slide-in-from-top-2 duration-200">
                   <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 mb-2">
-                    <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-widest mb-0.5">Musician ID</p>
-                    <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{mockUser.email}</p>
+                    <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-600 uppercase tracking-widest mb-0.5">Account</p>
+                    <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{firebaseUser?.email || 'No email'}</p>
                   </div>
                   <button onClick={() => setIsProfileDropdownOpen(false)} className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-zinc-600 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-white/5 transition-all">
                     <UserIcon size={18} />
@@ -215,7 +218,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
           </header>
 
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-10 transition-all duration-300">
+          <div className="flex-1 overflow-y-auto transition-all duration-300">
             {children}
           </div>
         </main>
