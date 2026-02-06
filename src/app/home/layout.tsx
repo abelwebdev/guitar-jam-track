@@ -13,6 +13,8 @@ import { auth } from "@/lib/firebaseClient";
 import { onAuthStateChanged, getIdToken } from "firebase/auth";
 import AudioPlayer from "@/components/AudioPlayer";
 import { usePlayer } from "@/contexts/PlayerContext";
+import { Audiowide } from 'next/font/google'
+const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
 
 export type DashboardView = 'home' | 'artists' | 'tracks' | 'playlists' | 'favorites' | 'tools';
 
@@ -154,7 +156,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
                   className="h-8 w-8 brightness-0 dark:brightness-100 dark:invert"
                 />
               </div>
-              <h1 className="text-md font-black tracking-tighter text-zinc-900 dark:text-white uppercase">Guitar JamTrack</h1>
+              <h1 className={`${audiowide.className}`}>Guitar JamTrack</h1>
             </div>
             <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 -ml-2 text-zinc-400 dark:text-zinc-500">
               <X size={20} />
