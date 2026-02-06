@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Sparkles, Zap, ChevronRight, X, Hash, Grid, Gauge, ListMusic, Heart, Users } from 'lucide-react';
+import { Zap, ChevronRight, X, Hash, Grid, Gauge, ListMusic, Heart, Users, Play, Pause, Volume2, VolumeX, Download } from 'lucide-react';
 import { BackingTrack } from '../types/types';
-import { useGetHighlightedArtistsQuery } from "@/services/api";
+import { useGetHighlightedArtistsQuery, useGetArtistTracksQuery } from "@/services/api";
 import { Audiowide } from 'next/font/google'
 const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
 
@@ -33,10 +33,11 @@ const ToolkitItem: React.FC<{ icon: React.ReactNode, name: string, active?: bool
   </div>
 );
 
-const ArtistCard: React.FC<{ id: number, name: string | null, trackCount: number, image: string | null }> = ({ id, name, trackCount, image }) => (
-  <Link href={`/artist/${encodeURIComponent(
-    (name ?? "").replace(/\s+/g, "_")
-    )}?id=${id}`} className="group relative rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 transition-all duration-500 text-left shadow-md cursor-pointer">
+const ArtistCard: React.FC<{ id: number, name: string | null, trackCount: number, image: string | null, onClick?: () => void }> = ({ id, name, trackCount, image, onClick }) => (
+  <div 
+    onClick={onClick}
+    className="group relative rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 transition-all duration-500 text-left shadow-md cursor-pointer"
+  >
     <div className="aspect-[4/5] overflow-hidden relative">
       <Image
         src={image || '/background-placeholder.jpg'}
@@ -55,7 +56,7 @@ const ArtistCard: React.FC<{ id: number, name: string | null, trackCount: number
         </div>
       </div>
     </div>
-  </Link>
+  </div>
 );
 
 export default function Header() {
@@ -69,10 +70,21 @@ export default function Header() {
 
 
   const [page, setPage] = useState(1);
+  const [trackPage, setTrackPage] = useState(1);
+  const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
   const [artistImages, setArtistImages] = useState<Record<number, string | null>>({});
   const { data: artists, isLoading, error } = useGetHighlightedArtistsQuery();
+  const { data: artistTracks, isLoading: isArtistTracksLoading } = useGetArtistTracksQuery(
+    selectedArtistId?.toString() || '',
+    { skip: !selectedArtistId }
+  );
   const fetchedIdsRef = useRef<Set<number>>(new Set());
   const safeArtists = artists ?? [];
+  const safeTracks = artistTracks ?? [];
+  
+  // Find selected artist
+  const selectedArtist = safeArtists.find(artist => artist.id === selectedArtistId);
+  
   const pageSize = 6;
   const totalPages = Math.max(1, Math.ceil(safeArtists.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -80,15 +92,64 @@ export default function Header() {
   const end = start + pageSize;
   const visible = safeArtists.slice(start, end);
 
+  // Track pagination
+  const trackPageSize = 12;
+  const totalTrackPages = Math.max(1, Math.ceil(safeTracks.length / trackPageSize));
+  const currentTrackPage = Math.min(trackPage, totalTrackPages);
+  const trackStart = (currentTrackPage - 1) * trackPageSize;
+  const trackEnd = trackStart + trackPageSize;
+  const visibleTracks = safeTracks.slice(trackStart, trackEnd);
+
   // Pagination handlers
   const handlePrev = () => setPage((p) => Math.max(1, p - 1));
   const handleNext = () => setPage((p) => Math.min(totalPages, p + 1));
+  const handleTrackPrev = () => setTrackPage((p) => Math.max(1, p - 1));
+  const handleTrackNext = () => setTrackPage((p) => Math.min(totalTrackPages, p + 1));
 
   // Landing Player State
   const [previewTrack, setPreviewTrack] = useState<BackingTrack | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(0.8);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Helper functions
+  const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getArtistName = (artist: BackingTrack['artist']): string => {
+    if (artist && typeof artist === 'object') {
+      return artist.artist_name || artist.name || 'Unknown Artist';
+    }
+    return typeof artist === 'string' ? artist : 'Unknown Artist';
+  };
+
+  const getTrackUrl = (url: string | undefined): string => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `https://guitar-backing-tracks.s3.us-east-1.amazonaws.com/${url}`;
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setCurrentTime(time);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const vol = parseFloat(e.target.value);
+    setVolume(vol);
+    if (audioRef.current) {
+      audioRef.current.volume = vol;
+    }
+  };
 
   // Ensure component is mounted before using theme
   useEffect(() => {
@@ -142,8 +203,10 @@ export default function Header() {
       <div className="min-h-screen transition-colors duration-300 bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 selection:bg-indigo-500/30 font-sans relative">
         <audio 
           ref={audioRef} 
-          src={previewTrack?.audioUrl} 
+          src={previewTrack?.track_url || previewTrack?.audioUrl} 
           onEnded={() => setIsPlaying(false)}
+          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
         />
 
         {/* Mobile Menu Overlay */}
@@ -385,147 +448,360 @@ export default function Header() {
               {/* Highlighted Artist View */}
               <section className="px-6 md:px-12 py-32 bg-zinc-50 dark:bg-zinc-950/30 border-t border-zinc-200 dark:border-zinc-900">
                 <div className="max-w-7xl mx-auto">
-                  <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 space-y-6 md:space-y-0">
-                    <div className="text-left">
-                      <div className="inline-flex items-center space-x-2 text-indigo-600 dark:text-indigo-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
-                        <Users size={16} />
-                        <span>The Riff Collective</span>
-                      </div>
-                      <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">Highlighted Artists</h2>
-                    </div>
-                    <Link href="/artists" className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-black uppercase text-xs tracking-widest">
-                      <span>View All</span>
-                      <ChevronRight size={14} />
-                    </Link>
-                  </div>
-                
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {isLoading ? (
-                      // Loading skeleton
-                      [...Array(6)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="animate-pulse bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-md relative"
-                        >
-                          <div className="aspect-[4/5] bg-zinc-200 dark:bg-zinc-700" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent p-6 flex flex-col justify-end">
-                            <div className="h-6 w-3/4 bg-zinc-300 dark:bg-zinc-600 rounded mb-2" />
-                            <div className="h-4 w-1/2 bg-zinc-300 dark:bg-zinc-600 rounded" />
+                  {!selectedArtistId ? (
+                    <>
+                      <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 space-y-6 md:space-y-0">
+                        <div className="text-left">
+                          <div className="inline-flex items-center space-x-2 text-indigo-600 dark:text-indigo-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
+                            <Users size={16} />
+                            <span>The Riff Collective</span>
                           </div>
+                          <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">Highlighted Artists</h2>
                         </div>
-                      ))
-                    ) : error ? (
-                      <div className="col-span-full text-center py-12">
-                        <p className="text-zinc-500 dark:text-zinc-400">Failed to load artists</p>
+                        <Link href="/sign-in" className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-black uppercase text-xs tracking-widest hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+                          <span>View All</span>
+                          <ChevronRight size={14} />
+                        </Link>
                       </div>
-                    ) : (
-                      visible.map((artist, idx) => {
-                        const artistImage = artistImages[artist.id] || null;
-                        return (
-                          <ArtistCard
-                            key={artist.id ?? idx}
-                            id={artist.id}
-                            name={artist.name}
-                            trackCount={artist.backing_tracks_count}
-                            image={artistImage}
-                          />
-                        );
-                      })
-                    )}
-                  </div>
-                  
-                  {/* Pagination Controls */}
-                  {!isLoading && !error && totalPages > 1 && (
-                    <div className="mt-12 flex items-center justify-center gap-2 sm:gap-4">
-                      <button
-                        type="button"
-                        onClick={handlePrev}
-                        disabled={currentPage === 1}
-                        className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
-                      >
-                        <ChevronRight size={14} className="rotate-180 sm:mr-2" />
-                        <span className="hidden sm:inline">Previous</span>
-                      </button>
-                      
-                      <div className="flex items-center space-x-1 sm:space-x-2">
-                        {/* Page numbers - responsive count */}
-                        {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
-                          let pageNum;
-                          if (totalPages <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 2) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 1) {
-                            pageNum = totalPages - 2 + i;
-                          } else {
-                            pageNum = currentPage - 1 + i;
-                          }
-                          
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => setPage(pageNum)}
-                              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 hover:scale-110 ${
-                                currentPage === pageNum
-                                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
-                              }`}
+                    
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {isLoading ? (
+                          // Loading skeleton
+                          [...Array(6)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="animate-pulse bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-md relative"
                             >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
-                        
-                        {/* Show additional pages on larger screens */}
-                        <div className="hidden sm:flex items-center space-x-2">
-                          {totalPages > 3 && Array.from({ length: Math.min(2, totalPages - 3) }, (_, i) => {
-                            let pageNum;
-                            if (currentPage <= 2) {
-                              pageNum = 4 + i;
-                            } else if (currentPage >= totalPages - 1) {
-                              // Already handled in main array
-                              return null;
-                            } else {
-                              pageNum = currentPage + 2 + i;
-                            }
-                            
-                            if (pageNum > totalPages) return null;
-                            
+                              <div className="aspect-[4/5] bg-zinc-200 dark:bg-zinc-700" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent p-6 flex flex-col justify-end">
+                                <div className="h-6 w-3/4 bg-zinc-300 dark:bg-zinc-600 rounded mb-2" />
+                                <div className="h-4 w-1/2 bg-zinc-300 dark:bg-zinc-600 rounded" />
+                              </div>
+                            </div>
+                          ))
+                        ) : error ? (
+                          <div className="col-span-full text-center py-12">
+                            <p className="text-zinc-500 dark:text-zinc-400">Failed to load artists</p>
+                          </div>
+                        ) : (
+                          visible.map((artist, idx) => {
+                            const artistImage = artistImages[artist.id] || null;
                             return (
-                              <button
-                                key={pageNum}
-                                onClick={() => setPage(pageNum)}
-                                className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${
-                                  currentPage === pageNum
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
-                                }`}
-                              >
-                                {pageNum}
-                              </button>
+                              <ArtistCard
+                                key={artist.id ?? idx}
+                                id={artist.id}
+                                name={artist.name}
+                                trackCount={artist.backing_tracks_count}
+                                image={artistImage}
+                                onClick={() => setSelectedArtistId(artist.id)}
+                              />
                             );
-                          })}
-                        </div>
+                          })
+                        )}
                       </div>
                       
-                      <button
-                        type="button"
-                        onClick={handleNext}
-                        disabled={currentPage === totalPages}
-                        className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                      {/* Pagination Controls */}
+                      {!isLoading && !error && totalPages > 1 && (
+                        <div className="mt-12 flex items-center justify-center gap-2 sm:gap-4">
+                          <button
+                            type="button"
+                            onClick={handlePrev}
+                            disabled={currentPage === 1}
+                            className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                          >
+                            <ChevronRight size={14} className="rotate-180 sm:mr-2" />
+                            <span className="hidden sm:inline">Previous</span>
+                          </button>
+                          
+                          <div className="flex items-center space-x-1 sm:space-x-2">
+                            {/* Page numbers - responsive count */}
+                            {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                              let pageNum;
+                              if (totalPages <= 3) {
+                                pageNum = i + 1;
+                              } else if (currentPage <= 2) {
+                                pageNum = i + 1;
+                              } else if (currentPage >= totalPages - 1) {
+                                pageNum = totalPages - 2 + i;
+                              } else {
+                                pageNum = currentPage - 1 + i;
+                              }
+                              
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => setPage(pageNum)}
+                                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 hover:scale-110 ${
+                                    currentPage === pageNum
+                                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                      : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              );
+                            })}
+                            
+                            {/* Show additional pages on larger screens */}
+                            <div className="hidden sm:flex items-center space-x-2">
+                              {totalPages > 3 && Array.from({ length: Math.min(2, totalPages - 3) }, (_, i) => {
+                                let pageNum;
+                                if (currentPage <= 2) {
+                                  pageNum = 4 + i;
+                                } else if (currentPage >= totalPages - 1) {
+                                  // Already handled in main array
+                                  return null;
+                                } else {
+                                  pageNum = currentPage + 2 + i;
+                                }
+                                
+                                if (pageNum > totalPages) return null;
+                                
+                                return (
+                                  <button
+                                    key={pageNum}
+                                    onClick={() => setPage(pageNum)}
+                                    className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${
+                                      currentPage === pageNum
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                    }`}
+                                  >
+                                    {pageNum}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={handleNext}
+                            disabled={currentPage === totalPages}
+                            className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                          >
+                            <span className="hidden sm:inline">Next</span>
+                            <ChevronRight size={14} className="sm:ml-2" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      {/* Page info */}
+                      {!isLoading && !error && safeArtists.length > 0 && (
+                        <div className="mt-6 text-center">
+                          <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                            Showing {start + 1}-{Math.min(end, safeArtists.length)} of {safeArtists.length} artists
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="animate-in slide-in-from-right-4 duration-500">
+                      <button 
+                        onClick={() => {
+                          setSelectedArtistId(null);
+                          setTrackPage(1);
+                        }}
+                        className="flex items-center space-x-2 text-zinc-500 hover:text-indigo-600 font-black uppercase text-xs tracking-widest transition-colors mb-12"
                       >
-                        <span className="hidden sm:inline">Next</span>
-                        <ChevronRight size={14} className="sm:ml-2" />
+                        <ChevronRight size={16} className="rotate-180" />
+                        <span>Back to highlighted artists</span>
                       </button>
-                    </div>
-                  )}
-                  
-                  {/* Page info */}
-                  {!isLoading && !error && safeArtists.length > 0 && (
-                    <div className="mt-6 text-center">
-                      <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-                        Showing {start + 1}-{Math.min(end, safeArtists.length)} of {safeArtists.length} artists
-                      </p>
+
+                      <div className="mb-12">
+                        <h3 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white mb-2">
+                          {selectedArtist?.name || 'Artist'}
+                        </h3>
+                        <p className="text-zinc-500 dark:text-zinc-400">
+                          {selectedArtist?.backing_tracks_count || 0} backing tracks
+                        </p>
+                      </div>
+
+                      {isArtistTracksLoading ? (
+                        <div className="space-y-3">
+                          {[...Array(6)].map((_, i) => (
+                            <div key={i} className="animate-pulse flex items-center justify-between p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40">
+                              <div className="flex items-center space-x-3 sm:space-x-4">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
+                                <div className="space-y-2">
+                                  <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                                  <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : artistTracks && artistTracks.length > 0 ? (
+                        <>
+                          <div className="space-y-3">
+                            {visibleTracks.map((track) => {
+                              const isCurrentTrack = previewTrack?.id === track.id;
+                              const isTrackPlaying = isCurrentTrack && isPlaying;
+                              
+                              return (
+                                <div 
+                                  key={track.id}
+                                  className={`flex items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all group cursor-pointer ${isTrackPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}
+                                  onClick={() => {
+                                    if (isCurrentTrack) {
+                                      setIsPlaying(!isPlaying);
+                                      if (audioRef.current) {
+                                        if (isPlaying) {
+                                          audioRef.current.pause();
+                                        } else {
+                                          audioRef.current.play();
+                                        }
+                                      }
+                                    } else {
+                                      setPreviewTrack(track);
+                                      setIsPlaying(true);
+                                    }
+                                  }}
+                                >
+                                  <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden relative shrink-0 bg-zinc-200 dark:bg-zinc-700 group/play">
+                                      <Image 
+                                        src="/background-placeholder.jpg"
+                                        alt={track.track_title || track.title || 'Track'}
+                                        width={48}
+                                        height={48}
+                                        className="w-full h-full object-cover" 
+                                      />
+                                      <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isTrackPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
+                                        {isTrackPlaying ? (
+                                          <Pause size={14} fill="white" className="text-white sm:w-4 sm:h-4" />
+                                        ) : (
+                                          <Play size={14} fill="white" className="text-white ml-0.5 sm:w-4 sm:h-4" />
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="text-left min-w-0 flex-1">
+                                      <h4 className={`text-xs sm:text-sm font-bold mb-0.5 truncate ${isTrackPlaying ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'}`}>
+                                        {track.track_title || track.title || 'Unknown Track'}
+                                      </h4>
+                                      <p className="text-[9px] sm:text-[10px] text-zinc-500 font-bold uppercase tracking-widest truncate">
+                                        {selectedArtist?.name || 'Unknown Artist'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className={`transition-opacity hidden sm:block ${isTrackPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                    {isTrackPlaying ? (
+                                      <div className="flex items-center space-x-1">
+                                        <div className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0ms', animationDuration: '800ms' }}></div>
+                                        <div className="w-1 h-4 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '200ms', animationDuration: '800ms' }}></div>
+                                        <div className="w-1 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '400ms', animationDuration: '800ms' }}></div>
+                                        <div className="w-1 h-5 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '600ms', animationDuration: '800ms' }}></div>
+                                      </div>
+                                    ) : (
+                                      <button className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-indigo-600">
+                                        Play
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Track Pagination Controls */}
+                          {totalTrackPages > 1 && (
+                            <div className="mt-12 flex items-center justify-center gap-2 sm:gap-4">
+                              <button
+                                type="button"
+                                onClick={handleTrackPrev}
+                                disabled={currentTrackPage === 1}
+                                className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                              >
+                                <ChevronRight size={14} className="rotate-180 sm:mr-2" />
+                                <span className="hidden sm:inline">Previous</span>
+                              </button>
+                              
+                              <div className="flex items-center space-x-1 sm:space-x-2">
+                                {/* Page numbers - responsive count */}
+                                {Array.from({ length: Math.min(3, totalTrackPages) }, (_, i) => {
+                                  let pageNum;
+                                  if (totalTrackPages <= 3) {
+                                    pageNum = i + 1;
+                                  } else if (currentTrackPage <= 2) {
+                                    pageNum = i + 1;
+                                  } else if (currentTrackPage >= totalTrackPages - 1) {
+                                    pageNum = totalTrackPages - 2 + i;
+                                  } else {
+                                    pageNum = currentTrackPage - 1 + i;
+                                  }
+                                  
+                                  return (
+                                    <button
+                                      key={pageNum}
+                                      onClick={() => setTrackPage(pageNum)}
+                                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 hover:scale-110 ${
+                                        currentTrackPage === pageNum
+                                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                          : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                      }`}
+                                    >
+                                      {pageNum}
+                                    </button>
+                                  );
+                                })}
+                                
+                                {/* Show additional pages on larger screens */}
+                                <div className="hidden sm:flex items-center space-x-2">
+                                  {totalTrackPages > 3 && Array.from({ length: Math.min(2, totalTrackPages - 3) }, (_, i) => {
+                                    let pageNum;
+                                    if (currentTrackPage <= 2) {
+                                      pageNum = 4 + i;
+                                    } else if (currentTrackPage >= totalTrackPages - 1) {
+                                      return null;
+                                    } else {
+                                      pageNum = currentTrackPage + 2 + i;
+                                    }
+                                    
+                                    if (pageNum > totalTrackPages) return null;
+                                    
+                                    return (
+                                      <button
+                                        key={pageNum}
+                                        onClick={() => setTrackPage(pageNum)}
+                                        className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${
+                                          currentTrackPage === pageNum
+                                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                            : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                        }`}
+                                      >
+                                        {pageNum}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              
+                              <button
+                                type="button"
+                                onClick={handleTrackNext}
+                                disabled={currentTrackPage === totalTrackPages}
+                                className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                              >
+                                <span className="hidden sm:inline">Next</span>
+                                <ChevronRight size={14} className="sm:ml-2" />
+                              </button>
+                            </div>
+                          )}
+                          
+                          {/* Track page info */}
+                          {safeTracks.length > 0 && (
+                            <div className="mt-6 text-center">
+                              <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                                Showing {trackStart + 1}-{Math.min(trackEnd, safeTracks.length)} of {safeTracks.length} tracks
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="py-20 text-center text-zinc-400 font-bold border border-dashed border-zinc-200 dark:border-zinc-800 rounded-[2rem]">
+                          No tracks found for this artist.
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -609,6 +885,98 @@ export default function Header() {
             cursor: pointer;
           }
         `}</style>
+
+        {/* Fixed Audio Player */}
+        {previewTrack && (
+          <div className="fixed bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 z-[150] w-full max-w-3xl px-4 sm:px-6 animate-in slide-in-from-bottom-8 duration-500">
+            <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-[2.5rem] p-3 sm:p-4 shadow-2xl flex items-center gap-2 sm:gap-4 md:gap-6 group overflow-hidden">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
+                <Image 
+                  src={'/background-placeholder.jpg'} 
+                  alt={previewTrack.track_title || previewTrack.title || 'Track'}
+                  width={64}
+                  height={64}
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="min-w-0 pr-2 sm:pr-4">
+                    <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 leading-tight truncate">
+                      {previewTrack.track_title || previewTrack.title || 'Unknown Track'}
+                    </p>
+                    <p className="text-[8px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest truncate">
+                      {getArtistName(previewTrack.artist)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <span className="hidden sm:block text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 text-right tabular-nums">
+                    {formatTime(currentTime)}
+                  </span>
+                  <div className="flex-1 h-1 sm:h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full relative group/progress cursor-pointer">
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max={duration || 100} 
+                      value={currentTime} 
+                      onChange={handleSeek} 
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
+                    />
+                    <div 
+                      className="absolute inset-y-0 left-0 bg-indigo-600 rounded-full transition-all duration-300"
+                      style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                    />
+                    <div 
+                      className="absolute top-1/2 -translate-y-1/2 w-2 h-2 sm:w-3 sm:h-3 bg-white border-2 border-indigo-600 rounded-full opacity-0 group-hover/progress:opacity-100 transition-opacity shadow-sm"
+                      style={{ left: `calc(${(currentTime / (duration || 1)) * 100}% - 4px)` }}
+                    />
+                  </div>
+                  <span className="hidden sm:block text-[8px] font-black text-zinc-400 dark:text-zinc-500 w-8 tabular-nums">
+                    {formatTime(duration)}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 sm:gap-2 md:gap-4 pr-1">
+                <div className="hidden sm:flex items-center space-x-2 group/vol w-16 sm:w-24">
+                  <button onClick={() => setVolume(v => (v === 0 ? 0.8 : 0))}>
+                    {volume === 0 ? <VolumeX size={16} className="text-zinc-400" /> : <Volume2 size={16} className="text-zinc-400" />}
+                  </button>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="1" 
+                    step="0.01" 
+                    value={volume} 
+                    onChange={handleVolumeChange} 
+                    className="w-full h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full accent-indigo-600 appearance-none cursor-pointer" 
+                  />
+                </div>
+                <a
+                  href={`/api/download?url=${encodeURIComponent(getTrackUrl(previewTrack.track_url || previewTrack.audioUrl))}`}
+                  className="hidden sm:block p-2 text-zinc-400 hover:text-indigo-600 transition-colors"
+                >
+                  <Download size={16} />
+                </a>
+                <button 
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-600/20"
+                >
+                  {isPlaying ? <Pause size={16} fill="white" /> : <Play size={16} fill="white" className="ml-0.5" />}
+                </button>
+                <button 
+                  onClick={() => {
+                    setPreviewTrack(null);
+                    setIsPlaying(false);
+                  }}
+                  className="p-1 sm:p-2 text-zinc-400 hover:text-red-500 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
