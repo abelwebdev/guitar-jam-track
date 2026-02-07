@@ -94,6 +94,29 @@ export const api = createApi({
         },
       }),
     }),
+    updateUser: builder.mutation<{ user: Omit<User, 'firebase_user_id' | 'password'> }, { idToken: string; username?: string; img?: string; password?: string }>({
+      query: ({ idToken, username, img, password }) => ({
+        url: '/user',
+        method: 'PATCH',
+        body: { idToken, username, img, password },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+      // Optimistically update the cache
+      async onQueryStarted({ idToken }, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          dispatch(
+            api.util.updateQueryData('getUser', idToken, (draft) => {
+              Object.assign(draft, data.user);
+            })
+          );
+        } catch (err) {
+          console.error('Update failed', err);
+        }
+      },
+    }),
     getHighlightedArtists: builder.query<Artist[], void>({
       query: () => "/gethighlightedartists"
     }),
@@ -204,6 +227,7 @@ export const {
   useSessionLogoutMutation,
   useGetUserQuery,
   useDeleteUserMutation,
+  useUpdateUserMutation,
   useGetHighlightedArtistsQuery,
   useGetAllTracksQuery, 
   useGetAllArtistsQuery, 
