@@ -218,6 +218,12 @@ export const api = createApi({
       }),
       invalidatesTags: ['Favorite']
     }),
+    downloadTrack: builder.query<Blob, string>({
+      query: (url) => ({
+        url: `/download?url=${encodeURIComponent(url)}`,
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
   }),
   tagTypes: ['Favorite']
 });
@@ -246,4 +252,5 @@ export const {
   useGetFavoritesQuery,
   useAddToFavoritesMutation,
   useRemoveFromFavoritesMutation,
+  useLazyDownloadTrackQuery,
 } = api;
