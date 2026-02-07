@@ -545,11 +545,14 @@ export default function Artists() {
             {isArtistLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
                 {[...Array(6)].map((_, idx) => (
-                  <div key={idx} className="animate-pulse bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8">
-                    <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-zinc-200 dark:bg-zinc-700" />
-                    <div className="text-center space-y-2">
-                      <div className="h-6 w-32 bg-zinc-200 dark:bg-zinc-700 rounded mx-auto" />
-                      <div className="h-4 w-20 bg-zinc-200 dark:bg-zinc-700 rounded mx-auto" />
+                  <div key={idx} className="group relative rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-md animate-pulse">
+                    <div className="aspect-[4/5] bg-zinc-200 dark:bg-zinc-800" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent p-6 flex flex-col justify-end">
+                      <div className="h-6 w-3/4 bg-zinc-300 dark:bg-zinc-700 rounded mb-2" />
+                      <div className="h-4 w-1/2 bg-zinc-300 dark:bg-zinc-700 rounded mb-4" />
+                      <div className="flex items-center justify-between">
+                        <div className="w-8 h-8 rounded-full bg-zinc-300/30 dark:bg-zinc-700/30 border border-white/10" />
+                      </div>
                     </div>
                   </div>
                 ))}
