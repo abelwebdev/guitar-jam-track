@@ -413,11 +413,12 @@ export default function ArtistsPage() {
             {isArtistLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
                 {[...Array(6)].map((_, idx) => (
-                  <div key={idx} className="animate-pulse bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8">
-                    <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-zinc-200 dark:bg-zinc-700" />
-                    <div className="text-center space-y-2">
-                      <div className="h-6 w-32 bg-zinc-200 dark:bg-zinc-700 rounded mx-auto" />
-                      <div className="h-4 w-20 bg-zinc-200 dark:bg-zinc-700 rounded mx-auto" />
+                  <div key={idx} className="animate-pulse relative aspect-[4/5] rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 flex flex-col justify-end">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                    <div className="relative space-y-3">
+                      <div className="h-7 w-40 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+                      <div className="h-4 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+                      <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 mt-4" />g
                     </div>
                   </div>
                 ))}
@@ -607,12 +608,13 @@ export default function ArtistsPage() {
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="animate-pulse flex items-center justify-between p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40">
                       <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
+                        <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-800" />
                         <div className="space-y-2">
-                          <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-700 rounded" />
-                          <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                          <div className="h-4 w-48 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                          <div className="h-3 w-32 bg-zinc-100 dark:bg-zinc-900 rounded" />
                         </div>
                       </div>
+                      <div className="h-4 w-12 bg-zinc-200 dark:bg-zinc-800 rounded-full" />
                     </div>
                   ))}
                 </div>
