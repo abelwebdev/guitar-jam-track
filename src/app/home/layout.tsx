@@ -51,6 +51,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [idToken, setIdToken] = useState<string | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [loopA, setLoopA] = useState<number | null>(null);
   const [loopB, setLoopB] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -64,16 +65,24 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const token = await getIdToken(user, true);
-        setIdToken(token);
-        setFirebaseUser(user);
+        try {
+          const token = await getIdToken(user, true);
+          setIdToken(token);
+          setFirebaseUser(user);
+        } catch (error) {
+          console.error('Error getting ID token:', error);
+          setIdToken(null);
+          setFirebaseUser(null);
+        }
       } else {
         setIdToken(null);
         setFirebaseUser(null);
+        router.push('/sign-in');
       }
+      setIsAuthChecking(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   const handleLogout = async () => {
     try {
@@ -120,12 +129,22 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (userLoading || !user) {
+  if (isAuthChecking || (idToken && userLoading)) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-[#09090b]">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 border-4 border-indigo-600/20 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <p className="text-sm font-medium text-zinc-500 animate-pulse">Initializing Dashboard...</p>
+        </div>
       </div>
     );
+  }
+
+  if (!user && !isAuthChecking) {
+    return null;
   }
   return (
     <div className="min-h-screen">
