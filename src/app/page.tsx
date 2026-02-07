@@ -814,45 +814,34 @@ export default function Header() {
         <footer className="py-16 px-6 md:px-12 border-t border-zinc-200 dark:border-zinc-900 bg-zinc-50 dark:bg-black transition-all">
           <div className="max-w-7xl mx-auto">
             {/* Main Footer Content */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4">
               {/* Brand Section */}
-              <div className="text-center md:text-left">
-                <div className="flex items-center justify-center md:justify-start space-x-3 mb-4 cursor-pointer">
-                  <Image
-                    src="/guitar-jam-track.png"
-                    alt="Guitar JamTrack Logo"
-                    width={32}
-                    height={32}
-                    priority
-                    className="h-8 w-8 brightness-0 dark:brightness-100 dark:invert"
-                  />
-                  <span className={`${audiowide.className} font-black tracking-tighter text-lg uppercase text-zinc-900 dark:text-white`}>
-                    Guitar JamTrack
-                  </span>
-                </div>
-                <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium leading-relaxed">
-                  Built by guitarists, for guitarists. Practice smarter with professional backing tracks and modern tools.
-                </p>
+              <div className="flex items-center space-x-3 cursor-pointer">
+                <Image
+                  src="/guitar-jam-track.png"
+                  alt="Guitar JamTrack Logo"
+                  width={24}
+                  height={24}
+                  priority
+                  className="h-6 w-6 brightness-0 dark:brightness-100 dark:invert"
+                />
+                <span className={`${audiowide.className} font-black tracking-tighter text-base uppercase text-zinc-900 dark:text-white`}>
+                  Guitar JamTrack
+                </span>
               </div>
 
               {/* Copyright Year */}
               <div className="flex items-center justify-center">
-                <p className="text-xs text-zinc-400 dark:text-zinc-600 font-medium">
-                  © {new Date().getFullYear()} Guitar JamTrack
+                <p className="text-[10px] sm:text-xs text-zinc-400 dark:text-zinc-600 font-medium tracking-wide">
+                  © {new Date().getFullYear()} GUITAR JAMTRACK
                 </p>
               </div>
 
               {/* Developer Credit */}
-              <div className="text-center md:text-right flex flex-col items-center md:items-end justify-center">
-                <a
-                  href="https://abelwebdev.netlify.app"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group inline-flex items-center space-x-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-medium"
-                >
-                  <span>Crafted with passion</span>
-                  <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                </a>
+              <div className="flex items-center justify-center md:justify-end">
+                <p className="text-[10px] sm:text-xs text-zinc-400 dark:text-zinc-600 font-medium tracking-wide uppercase">
+                  Built By <a href="https://abelwebdev.netlify.app" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors font-bold underline underline-offset-4 decoration-indigo-500/30 hover:decoration-indigo-500">Me</a>
+                </p>
               </div>
             </div>
           </div>
