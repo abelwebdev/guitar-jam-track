@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Zap, ChevronRight, X, Hash, Grid, Gauge, ListMusic, Heart, Users, Play, Pause, Volume2, VolumeX, Download } from 'lucide-react';
+import { Zap, ChevronRight, X, Hash, Grid, Gauge, ListMusic, Heart, Users, Play, Pause, Volume2, VolumeX, Download, Loader2 } from 'lucide-react';
 import { BackingTrack } from '../types/types';
-import { useGetHighlightedArtistsQuery, useGetArtistTracksQuery } from "@/services/api";
+import { useGetHighlightedArtistsQuery, useGetArtistTracksQuery, useLazyDownloadTrackQuery } from "@/services/api";
+import { toast } from "sonner";
 import { Audiowide } from 'next/font/google'
 const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
 
@@ -114,6 +115,9 @@ export default function Header() {
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const [triggerDownload, { isFetching: isDownloading }] = useLazyDownloadTrackQuery();
+  const [downloadingTrackUrl, setDownloadingTrackUrl] = useState<string | null>(null);
+
   // Helper functions
   const formatTime = (seconds: number) => {
     if (!seconds || isNaN(seconds)) return '0:00';
@@ -129,10 +133,10 @@ export default function Header() {
     return typeof artist === 'string' ? artist : 'Unknown Artist';
   };
 
-  const getTrackUrl = (url: string | undefined): string => {
+  const getTrackUrl = (url: string | null | undefined): string => {
     if (!url) return '';
     if (url.startsWith('http')) return url;
-    return `https://guitar-backing-tracks.s3.us-east-1.amazonaws.com/${url}`;
+    return `https://guitarbackingtrack.org/wp-content/uploads/${url}`;
   };
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,11 +169,87 @@ export default function Header() {
     }
   }, [activeToolkit]);
 
+  // Audio event handlers
+  const handlePreviewPlay = (track: BackingTrack) => {
+    if (previewTrack?.id === track.id) {
+      setIsPlaying(!isPlaying);
+    } else {
+      setPreviewTrack(track);
+      setIsPlaying(true);
+      setCurrentTime(0); // Reset time for new track
+    }
+  };
+
+  const handleDownload = async (track: BackingTrack) => {
+    const trackUrl = getTrackUrl(track.track_url || track.audioUrl);
+    if (!trackUrl) return;
+
+    setDownloadingTrackUrl(trackUrl);
+    try {
+      const { data: blob } = await triggerDownload(trackUrl);
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = trackUrl.split('/').pop() || 'track.mp3';
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        toast.error("Failed to download track");
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error("Download failed. Please try again.");
+    } finally {
+      setDownloadingTrackUrl(null);
+    }
+  };
+
+  const onTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+      setDuration(audioRef.current.duration || 0);
+    }
+  };
+
+  const onLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration || 0);
+    }
+  };
+
+  const onCanPlay = () => {
+    if (audioRef.current && isPlaying) {
+      audioRef.current.play().catch((error) => {
+        console.error('Audio play failed:', error);
+        setIsPlaying(false);
+      });
+    }
+  };
+
+  // Audio playback effect
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
-      if (isPlaying) {
-        audioRef.current.play().catch(() => setIsPlaying(false));
+      
+      if (isPlaying && previewTrack) {
+        // Load new track if changed
+        const trackUrl = getTrackUrl(previewTrack.track_url || previewTrack.audioUrl);
+        if (trackUrl && audioRef.current.src !== trackUrl) {
+          audioRef.current.src = trackUrl;
+          audioRef.current.load();
+        }
+        
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            console.error('Audio play failed:', error);
+            setIsPlaying(false);
+          });
+        }
       } else {
         audioRef.current.pause();
       }
@@ -203,10 +283,15 @@ export default function Header() {
       <div className="min-h-screen transition-colors duration-300 bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 selection:bg-indigo-500/30 font-sans relative">
         <audio 
           ref={audioRef} 
-          src={previewTrack?.track_url || previewTrack?.audioUrl} 
+          onTimeUpdate={onTimeUpdate}
+          onLoadedMetadata={onLoadedMetadata}
+          onCanPlay={onCanPlay}
           onEnded={() => setIsPlaying(false)}
-          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+          onError={(e) => {
+            console.error('Audio error:', e);
+            setIsPlaying(false);
+          }}
+          preload="metadata"
         />
 
         {/* Mobile Menu Overlay */}
@@ -637,26 +722,11 @@ export default function Header() {
                             {visibleTracks.map((track) => {
                               const isCurrentTrack = previewTrack?.id === track.id;
                               const isTrackPlaying = isCurrentTrack && isPlaying;
-                              
                               return (
                                 <div 
                                   key={track.id}
                                   className={`flex items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all group cursor-pointer ${isTrackPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}
-                                  onClick={() => {
-                                    if (isCurrentTrack) {
-                                      setIsPlaying(!isPlaying);
-                                      if (audioRef.current) {
-                                        if (isPlaying) {
-                                          audioRef.current.pause();
-                                        } else {
-                                          audioRef.current.play();
-                                        }
-                                      }
-                                    } else {
-                                      setPreviewTrack(track);
-                                      setIsPlaying(true);
-                                    }
-                                  }}
+                                  onClick={() => handlePreviewPlay(track)}
                                 >
                                   <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden relative shrink-0 bg-zinc-200 dark:bg-zinc-700 group/play">
@@ -684,7 +754,7 @@ export default function Header() {
                                       </p>
                                     </div>
                                   </div>
-                                  <div className={`transition-opacity hidden sm:block ${isTrackPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                  <div className={`flex items-center space-x-4 transition-opacity ${isTrackPlaying || (isDownloading && downloadingTrackUrl === getTrackUrl(track.track_url)) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                     {isTrackPlaying ? (
                                       <div className="flex items-center space-x-1">
                                         <div className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0ms', animationDuration: '800ms' }}></div>
@@ -693,7 +763,7 @@ export default function Header() {
                                         <div className="w-1 h-5 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '600ms', animationDuration: '800ms' }}></div>
                                       </div>
                                     ) : (
-                                      <button className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-indigo-600">
+                                      <button className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-indigo-600">
                                         Play
                                       </button>
                                     )}
@@ -941,12 +1011,18 @@ export default function Header() {
                     className="w-full h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full accent-indigo-600 appearance-none cursor-pointer" 
                   />
                 </div>
-                <a
-                  href={`/api/download?url=${encodeURIComponent(getTrackUrl(previewTrack.track_url || previewTrack.audioUrl))}`}
-                  className="hidden sm:block p-2 text-zinc-400 hover:text-indigo-600 transition-colors"
+                <button
+                  onClick={() => handleDownload(previewTrack)}
+                  disabled={isDownloading}
+                  className={`hidden sm:block p-2 text-zinc-400 hover:text-indigo-600 transition-colors ${isDownloading ? 'cursor-not-allowed' : ''}`}
+                  title={isDownloading ? "Downloading..." : "Download Track"}
                 >
-                  <Download size={16} />
-                </a>
+                  {isDownloading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Download size={16} />
+                  )}
+                </button>
                 <button 
                   onClick={() => setIsPlaying(!isPlaying)}
                   className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-lg shadow-indigo-600/20"
