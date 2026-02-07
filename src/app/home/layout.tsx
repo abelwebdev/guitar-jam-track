@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
 import { 
-  LayoutDashboard, LogOut, Users, Music2, Heart, ListMusic, Anchor,
+  LayoutDashboard, LogOut, Users, Music2, Heart, ListMusic, Anchor, ChevronLeft,
   Menu, X, User as UserIcon
 } from 'lucide-react';
 import Image from "next/image";
@@ -47,6 +47,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [idToken, setIdToken] = useState<string | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [loopA, setLoopA] = useState<number | null>(null);
@@ -140,13 +141,14 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
       <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar */}
         <aside className={`
-          fixed inset-y-0 left-0 w-72 bg-zinc-50 dark:bg-black flex flex-col border-r border-zinc-200 dark:border-zinc-900 p-6 z-[110] transition-transform duration-300 transform 
-          md:relative md:translate-x-0 md:w-64
+          fixed inset-y-0 left-0 w-72 bg-zinc-50 dark:bg-black flex flex-col border-r border-zinc-200 dark:border-zinc-900 p-4 z-[110] transition-all duration-300 transform 
+          md:relative md:translate-x-0 
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          ${isDesktopSidebarOpen ? 'md:w-64' : 'md:w-0 md:overflow-hidden md:p-0 md:border-r-0'}
         `}>
           <div className="flex items-center justify-between mb-10">
-            <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => handleNavigation('home')}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center">
+            <div className="flex items-center space-x-2 group cursor-pointer min-w-0" onClick={() => handleNavigation('home')}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0">
                 <Image
                   src="/guitar-jam-track.png"
                   alt="Guitar JamTrack Logo"
@@ -156,10 +158,19 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
                   className="h-8 w-8 brightness-0 dark:brightness-100 dark:invert"
                 />
               </div>
-              <h1 className={`${audiowide.className}`}>Guitar JamTrack</h1>
+              <h1 className={`${audiowide.className} text-sm tracking-tight`}>Guitar JamTrack</h1>
             </div>
-            <button onClick={() => setIsSidebarOpen(false)} className="md:hidden p-2 -ml-2 text-zinc-400 dark:text-zinc-500">
-              <X size={20} />
+            <button 
+              onClick={() => {
+                if (window.innerWidth >= 768) {
+                  setIsDesktopSidebarOpen(false);
+                } else {
+                  setIsSidebarOpen(false);
+                }
+              }} 
+              className="p-2 shrink-0 text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+            >
+              <ChevronLeft size={20} />
             </button>
           </div>
 
@@ -176,7 +187,16 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
         <main className="flex-1 flex flex-col min-w-0 relative bg-white dark:bg-[#09090b]">
           {/* Header */}
           <header className="h-16 md:h-20 flex items-center justify-between px-6 md:px-10 sticky top-0 z-50 bg-white/70 dark:bg-black/40 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-900 transition-all">
-            <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 -ml-2 text-zinc-500 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
+            <button 
+              onClick={() => {
+                if (window.innerWidth >= 768) {
+                  setIsDesktopSidebarOpen(true);
+                } else {
+                  setIsSidebarOpen(true);
+                }
+              }} 
+              className={`p-2 -ml-2 text-zinc-500 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 ${isDesktopSidebarOpen ? 'md:hidden' : 'md:block'}`}
+            >
               <Menu size={20} />
             </button>
 
