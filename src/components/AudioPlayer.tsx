@@ -231,12 +231,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         </div>
 
         {/* Main Content Area */}
-        <div className={`${isMobileExpanded ? 'flex-col items-stretch' : 'flex-row items-center justify-between'} flex-1 flex lg:flex-row lg:items-center px-4 lg:px-8 py-2 lg:py-3 relative overflow-y-auto lg:overflow-visible no-scrollbar`}>
+        <div className={`${isMobileExpanded ? 'flex-col items-stretch' : 'flex-row items-center justify-between gap-2'} flex-1 flex lg:flex-row lg:items-center px-4 lg:px-8 py-2 lg:py-3 relative overflow-y-auto lg:overflow-visible no-scrollbar`}>
           
           {/* Mobile Close Button (Expanded Only) */}
           <button
             onClick={handleClose}
-            className={`${isMobileExpanded ? 'block' : 'hidden'} lg:hidden absolute top-2 right-12 p-2 text-zinc-400 hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400 rounded-full transition-all duration-200 z-10`}
+            className={`${isMobileExpanded ? 'block' : 'hidden'} lg:hidden absolute top-1 right-12 p-2 text-zinc-400 hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400 rounded-full transition-all duration-200 z-10`}
             title="Close player"
           >
             <X size={18} />
@@ -244,7 +244,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
           {/* Mobile Collapse Toggle (Absolute Top Right for Easy Access) */}
           <button 
-            className={`${isMobileExpanded ? 'block' : 'hidden'} lg:hidden absolute top-2 right-2 p-2 text-zinc-400 z-10`}
+            className={`${isMobileExpanded ? 'block' : 'hidden'} lg:hidden absolute top-1 right-2 p-2 text-zinc-400 z-10`}
             onClick={() => setIsMobileExpanded(!isMobileExpanded)}
           >
              {isMobileExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -253,14 +253,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           {/* Desktop Close Button */}
           <button
             onClick={handleClose}
-            className="hidden lg:block absolute top-2 right-4 p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:text-zinc-500 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-full transition-all duration-200 z-10 hover:scale-110 active:scale-95"
+            className="hidden lg:block absolute top-1 right-4 p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:text-zinc-500 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-full transition-all duration-200 z-10 hover:scale-110 active:scale-95"
             title="Close player (Esc)"
           >
             <X size={20} />
           </button>
 
           {/* Left: Track Info */}
-          <div className={`flex-none lg:flex-1 lg:w-[30%] flex items-center space-x-3 lg:space-x-4 min-w-0 ${isMobileExpanded ? 'mb-4' : 'mb-0'} lg:mb-0`}>
+          <div className={`${isMobileExpanded ? 'flex-none' : 'flex-1 max-w-[50%]'} lg:flex-1 lg:w-[30%] flex items-center ${isMobileExpanded ? 'space-x-3' : 'space-x-2'} lg:space-x-4 min-w-0 ${isMobileExpanded ? 'mb-4' : 'mb-0'} lg:mb-0`}>
             <div 
               className={`relative transition-all duration-300 ${isMobileExpanded ? 'w-20 h-20' : 'w-10 h-10'} lg:w-16 lg:h-16 rounded-lg lg:rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-md lg:shadow-lg shrink-0`}
               onClick={() => setIsMobileExpanded(!isMobileExpanded)}
@@ -273,10 +273,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 unoptimized={playerState.currentTrack?.coverUrl?.startsWith('http')}
               />
             </div>
-            <div className="min-w-0 flex-1 text-left pr-8 lg:pr-0">
-              <h4 className={`font-black text-zinc-900 dark:text-white truncate leading-tight mb-0.5 transition-all ${isMobileExpanded ? 'text-lg' : 'text-xs lg:text-sm'}`}>
-                {playerState.currentTrack?.title}
-              </h4>
+            <div className="min-w-0 flex-1 text-left overflow-hidden">
+              <div className="overflow-hidden mb-0.5">
+                <h4 className={`font-black text-zinc-900 dark:text-white leading-tight transition-all whitespace-nowrap inline-block ${isMobileExpanded ? 'text-lg' : 'text-xs lg:text-sm'} animate-slide-title`}>
+                  {playerState.currentTrack?.title}
+                </h4>
+              </div>
               <p className={`text-zinc-500 font-bold truncate uppercase tracking-wider transition-all ${isMobileExpanded ? 'text-xs' : 'text-[9px] lg:text-[11px]'}`}>
                 {getArtistName(playerState.currentTrack?.artist)}
               </p>
@@ -284,7 +286,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           </div>
 
           {/* Center: Controls */}
-          <div className={`flex-1 flex ${isMobileExpanded ? 'flex-col space-y-4' : 'flex-row justify-end space-y-0'} items-center lg:justify-center lg:space-y-1 w-full lg:w-auto`}>
+          <div className={`${isMobileExpanded ? 'flex-1 flex-col space-y-4' : 'flex-none flex-row justify-end space-y-0 gap-2'} flex items-center lg:flex-1 lg:justify-center lg:space-y-1 lg:w-auto`}>
             {/* Primary Controls */}
             <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto space-x-0 lg:space-x-8">
               

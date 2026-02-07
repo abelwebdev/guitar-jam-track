@@ -133,3 +133,24 @@
 .animate-marquee {
   animation: marquee 10s linear infinite;
 }
+
+@keyframes slide-title {
+  0%, 20% {
+    transform: translateX(0);
+  }
+  45%, 55% {
+    transform: translateX(calc(-100% + 100px));
+  }
+  80%, 100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-title {
+  animation: slide-title 24s ease-in-out infinite;
+}
+
+/* Only animate if title is wider than container */
+.animate-slide-title:not(:hover) {
+  animation-play-state: running;
+}
