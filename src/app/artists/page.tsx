@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Play, ChevronRight, ArrowLeft, Pause, Volume2, Download, VolumeX, X, Search } from 'lucide-react';
+import { Play, ChevronRight, ArrowLeft, Pause, Volume2, Download, VolumeX, X, Search, Loader2 } from 'lucide-react';
 import { BackingTrack } from '../../types/types';
-import { useGetAllArtistsQuery, useGetArtistTracksQuery, useSearchArtistsQuery } from "@/services/api";
+import { useGetAllArtistsQuery, useGetArtistTracksQuery, useSearchArtistsQuery, useLazyDownloadTrackQuery } from "@/services/api";
+import { toast } from "sonner";
 
 type Artist = {
   id: number;
@@ -14,7 +15,7 @@ type Artist = {
 };
 
 // Helper to get correct track URL
-const getTrackUrl = (url: string | undefined): string => {
+const getTrackUrl = (url: string | null | undefined): string => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
   return `https://guitarbackingtrack.org/wp-content/uploads/${url}`;
@@ -70,9 +71,11 @@ const ArtistCard: React.FC<{
 const TrackPreviewRow: React.FC<{ 
   track: BackingTrack, 
   isPlaying: boolean, 
+  isDownloading: boolean,
   artistName?: string,
-  onPlay: (track: BackingTrack) => void
-}> = ({ track, isPlaying, artistName, onPlay }) => (
+  onPlay: (track: BackingTrack) => void,
+  onDownload: (track: BackingTrack) => void
+}> = ({ track, isPlaying, isDownloading, artistName, onPlay, onDownload }) => (
   <div onClick={() => onPlay(track)} className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
     <div className="flex items-center space-x-4">
       <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
@@ -97,7 +100,7 @@ const TrackPreviewRow: React.FC<{
       </div>
     </div>
     <div className="flex items-center space-x-6">
-      <div className={`transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+      <div className={`flex items-center space-x-4 transition-opacity ${isPlaying || isDownloading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
         {isPlaying ? (
           <div className="flex items-center space-x-1">
             <div className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0ms', animationDuration: '800ms' }}></div>
@@ -138,6 +141,8 @@ export default function ArtistsPage() {
     selectedArtistId?.toString() || '',
     { skip: !selectedArtistId }
   );
+  const [triggerDownload, { isFetching: isDownloading }] = useLazyDownloadTrackQuery();
+  const [downloadingTrackUrl, setDownloadingTrackUrl] = useState<string | null>(null);
   
   // Determine which data to use
   const allArtistsData = searchQuery.trim() ? searchResults : allArtists;
@@ -339,6 +344,34 @@ export default function ArtistsPage() {
     const mins = Math.floor(time / 60);
     const secs = Math.floor(time % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleDownload = async (track: BackingTrack) => {
+    const trackUrl = getTrackUrl(track.track_url || track.audioUrl);
+    if (!trackUrl) return;
+
+    setDownloadingTrackUrl(trackUrl);
+    try {
+      const { data: blob } = await triggerDownload(trackUrl);
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = trackUrl.split('/').pop() || 'track.mp3';
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        toast.error("Failed to download track");
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error("Download failed. Please try again.");
+    } finally {
+      setDownloadingTrackUrl(null);
+    }
   };
 
   return (
@@ -592,7 +625,9 @@ export default function ArtistsPage() {
                         track={track} 
                         artistName={selectedArtist?.name || undefined}
                         isPlaying={previewTrack?.id === track.id && isPlaying}
+                        isDownloading={isDownloading && downloadingTrackUrl === getTrackUrl(track.track_url)}
                         onPlay={handlePreviewPlay}
+                        onDownload={handleDownload}
                       />
                     ))}
                   </div>
@@ -761,14 +796,18 @@ export default function ArtistsPage() {
                     className="w-full h-1 bg-zinc-200 dark:bg-zinc-800 rounded-full accent-indigo-600 appearance-none cursor-pointer" 
                   />
                  </div>
-                  <a
-                    href={`/api/download?url=${encodeURIComponent(
-                      getTrackUrl(previewTrack.track_url || previewTrack.audioUrl)
-                    )}`}
-                    className="hidden sm:block p-2 text-zinc-400 hover:text-indigo-600 transition-colors"
+                  <button
+                    onClick={() => handleDownload(previewTrack)}
+                    disabled={isDownloading}
+                    className={`hidden sm:block p-2 text-zinc-400 hover:text-indigo-600 transition-colors ${isDownloading ? 'cursor-not-allowed' : ''}`}
+                    title={isDownloading ? "Downloading..." : "Download Track"}
                   >
-                    <Download size={16} />
-                  </a>
+                    {isDownloading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Download size={16} />
+                    )}
+                  </button>
 
                  <button 
                    onClick={() => setIsPlaying(!isPlaying)}
