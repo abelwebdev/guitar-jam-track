@@ -418,7 +418,7 @@ export default function ArtistsPage() {
                     <div className="relative space-y-3">
                       <div className="h-7 w-40 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
                       <div className="h-4 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
-                      <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 mt-4" />g
+                      <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 mt-4" />
                     </div>
                   </div>
                 ))}

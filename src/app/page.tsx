@@ -553,14 +553,12 @@ export default function Header() {
                         {isLoading ? (
                           // Loading skeleton
                           [...Array(6)].map((_, i) => (
-                            <div
-                              key={i}
-                              className="animate-pulse bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-md relative"
-                            >
-                              <div className="aspect-[4/5] bg-zinc-200 dark:bg-zinc-700" />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent p-6 flex flex-col justify-end">
-                                <div className="h-6 w-3/4 bg-zinc-300 dark:bg-zinc-600 rounded mb-2" />
-                                <div className="h-4 w-1/2 bg-zinc-300 dark:bg-zinc-600 rounded" />
+                            <div key={i} className="animate-pulse relative aspect-[4/5] rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 flex flex-col justify-end">
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                              <div className="relative space-y-3">
+                                <div className="h-7 w-40 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+                                <div className="h-4 w-24 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />
+                                <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 mt-4" />
                               </div>
                             </div>
                           ))
@@ -706,13 +704,14 @@ export default function Header() {
                         <div className="space-y-3">
                           {[...Array(6)].map((_, i) => (
                             <div key={i} className="animate-pulse flex items-center justify-between p-3 sm:p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40">
-                              <div className="flex items-center space-x-3 sm:space-x-4">
-                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
-                                <div className="space-y-2">
-                                  <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-700 rounded" />
-                                  <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                              <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
+                                <div className="space-y-1.5">
+                                  <div className="h-3.5 sm:h-4 w-32 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                                  <div className="h-2.5 sm:h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded" />
                                 </div>
                               </div>
+                              <div className="hidden sm:block w-8 h-3 bg-zinc-200 dark:bg-zinc-700 rounded" />
                             </div>
                           ))}
                         </div>

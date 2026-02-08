@@ -272,7 +272,6 @@ export default function TracksPage() {
 
         <div className="space-y-3">
           {isTrackLoading ? (
-            // Loading skeleton
             [...Array(tracksPerPage)].map((_, i) => (
               <div key={i} className="animate-pulse flex items-center justify-between p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40">
                 <div className="flex items-center space-x-4">
@@ -283,10 +282,6 @@ export default function TracksPage() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-6">
-                  <div className="hidden sm:flex items-center space-x-2">
-                    <div className="h-5 w-8 bg-zinc-200 dark:bg-zinc-700 rounded" />
-                    <div className="h-3 w-12 bg-zinc-200 dark:bg-zinc-700 rounded" />
-                  </div>
                   <div className="h-3 w-12 bg-zinc-200 dark:bg-zinc-700 rounded" />
                 </div>
               </div>
