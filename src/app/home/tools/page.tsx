@@ -6,14 +6,18 @@ import { Play, Pause, Gauge, Hash, Zap, Grid } from "lucide-react";
 import guitarDb from '@tombatossals/chords-db/lib/guitar.json';
 
 type ToolTab = "metronome" | "tuner" | "chord-library" | "scales";
+
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
 // Map NOTES to the keys used in guitar.json
 const NOTE_TO_DB_KEY: Record<string, string> = {
   "C": "C", "C#": "Csharp", "D": "D", "D#": "Eb", "E": "E", "F": "F", 
   "F#": "Fsharp", "G": "G", "G#": "Ab", "A": "A", "A#": "Bb", "B": "B"
 };
+
 // Get available suffixes from the DB
 const CHORD_VARIATIONS = guitarDb.suffixes;
+
 const SCALES_DATA: Record<string, number[]> = {
   Major: [0, 2, 4, 5, 7, 9, 11],
   Minor: [0, 2, 3, 5, 7, 8, 10],
@@ -25,6 +29,7 @@ const SCALES_DATA: Record<string, number[]> = {
 };
 
 const STRINGS_BASE_NOTES = [4, 9, 2, 7, 11, 4];
+
 export default function ToolsPage() {
   const [activeToolTab, setActiveToolTab] = useState<ToolTab>("metronome");
   // tools
@@ -37,6 +42,13 @@ export default function ToolsPage() {
   const metronomeIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = React.useRef<AudioContext | null>(null);
   const [isTunerActive, setIsTunerActive] = useState(false);
+  const [detectedNote, setDetectedNote] = useState<string>('');
+  const [detectedFrequency, setDetectedFrequency] = useState<number>(0);
+  const [cents, setCents] = useState<number>(0);
+  const audioContextTunerRef = React.useRef<AudioContext | null>(null);
+  const analyserRef = React.useRef<AnalyserNode | null>(null);
+  const micStreamRef = React.useRef<MediaStream | null>(null);
+  const animationFrameRef = React.useRef<number | null>(null);
   const [selectedChordRoot, setSelectedChordRoot] = useState("C");
   const [selectedChordType, setSelectedChordType] = useState("major");
   const [selectedScaleRoot, setSelectedScaleRoot] = useState("A");
@@ -57,8 +69,162 @@ export default function ToolsPage() {
     }
   };
 
+  // Tuner pitch detection
+  const frequencyToNote = React.useCallback((frequency: number) => {
+    const noteNum = 12 * (Math.log(frequency / 440) / Math.log(2));
+    const roundedNote = Math.round(noteNum) + 69;
+    const cents = Math.floor((noteNum - Math.round(noteNum)) * 100);
+    return {
+      note: NOTES[roundedNote % 12],
+      octave: Math.floor(roundedNote / 12) - 1,
+      cents: cents
+    };
+  }, []);
+
+  const autoCorrelate = React.useCallback((buffer: Float32Array, sampleRate: number) => {
+    let SIZE = buffer.length;
+    let rms = 0;
+    
+    for (let i = 0; i < SIZE; i++) {
+      const val = buffer[i];
+      rms += val * val;
+    }
+    rms = Math.sqrt(rms / SIZE);
+    
+    // Lower threshold for better sensitivity
+    if (rms < 0.005) return -1;
+    
+    let r1 = 0, r2 = SIZE - 1;
+    const thres = 0.1; // Lower threshold
+    for (let i = 0; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+    }
+    for (let i = 1; i < SIZE / 2; i++) {
+      if (Math.abs(buffer[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+    }
+    
+    buffer = buffer.slice(r1, r2);
+    SIZE = buffer.length;
+    
+    const c = new Array(SIZE).fill(0);
+    for (let i = 0; i < SIZE; i++) {
+      for (let j = 0; j < SIZE - i; j++) {
+        c[i] = c[i] + buffer[j] * buffer[j + i];
+      }
+    }
+    
+    let d = 0;
+    while (c[d] > c[d + 1]) d++;
+    
+    let maxval = -1, maxpos = -1;
+    for (let i = d; i < SIZE; i++) {
+      if (c[i] > maxval) {
+        maxval = c[i];
+        maxpos = i;
+      }
+    }
+    
+    let T0 = maxpos;
+    
+    const x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+    const a = (x1 + x3 - 2 * x2) / 2;
+    const b = (x3 - x1) / 2;
+    if (a) T0 = T0 - b / (2 * a);
+    
+    return sampleRate / T0;
+  }, []);
+
+  const updatePitch = React.useCallback(() => {
+    if (!analyserRef.current || !audioContextTunerRef.current) return;
+    
+    const analyser = analyserRef.current;
+    const bufferLength = analyser.fftSize;
+    const buffer = new Float32Array(bufferLength);
+    analyser.getFloatTimeDomainData(buffer);
+    
+    const frequency = autoCorrelate(buffer, audioContextTunerRef.current.sampleRate);
+    
+    // Guitar frequency range: E2 (82Hz) to E6 (1318Hz)
+    if (frequency > 60 && frequency < 1500) {
+      const noteInfo = frequencyToNote(frequency);
+      setDetectedNote(`${noteInfo.note}${noteInfo.octave}`);
+      setDetectedFrequency(frequency);
+      setCents(noteInfo.cents);
+    }
+    
+    if (isTunerActive) {
+      animationFrameRef.current = requestAnimationFrame(updatePitch);
+    }
+  }, [isTunerActive, frequencyToNote, autoCorrelate]);
+
+  const startTuner = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+      
+      audioContextTunerRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContextTunerRef.current.createMediaStreamSource(stream);
+      
+      analyserRef.current = audioContextTunerRef.current.createAnalyser();
+      analyserRef.current.fftSize = 2048;
+      
+      source.connect(analyserRef.current);
+      
+      setIsTunerActive(true);
+    } catch (err) {
+      console.error('Error accessing microphone:', err);
+      alert('Could not access microphone. Please grant permission.');
+    }
+  };
+
+  const stopTuner = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(track => track.stop());
+    }
+    
+    if (audioContextTunerRef.current) {
+      audioContextTunerRef.current.close();
+    }
+    
+    setIsTunerActive(false);
+    setDetectedNote('');
+    setDetectedFrequency(0);
+    setCents(0);
+  };
+
+  // Start pitch detection loop when tuner becomes active
+  React.useEffect(() => {
+    if (isTunerActive && analyserRef.current && audioContextTunerRef.current) {
+      updatePitch();
+    }
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isTunerActive, updatePitch]);
+
+  React.useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (audioContextTunerRef.current) {
+        audioContextTunerRef.current.close();
+      }
+    };
+  }, []);
+
   // Metronome audio playback
-  const playMetronomeClick = (isAccent: boolean) => {
+  const playMetronomeClick = React.useCallback((isAccent: boolean) => {
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
@@ -114,7 +280,7 @@ export default function ToolsPage() {
         oscillator.stop(ctx.currentTime + 0.06);
         break;
     }
-  };
+  }, [metronomeVolume, metronomeSoundType]);
 
   // Metronome effect
   React.useEffect(() => {
@@ -145,7 +311,7 @@ export default function ToolsPage() {
       }
       setMetronomeTick(0);
     }
-  }, [isMetronomePlaying, metronomeBpm, metronomeTimeSignature, metronomeVolume, metronomeSoundType]);
+  }, [isMetronomePlaying, metronomeBpm, metronomeTimeSignature, metronomeVolume, metronomeSoundType, playMetronomeClick]);
 
   const isNoteInScale = (
     stringIndex: number,
@@ -376,25 +542,119 @@ export default function ToolsPage() {
         )}
 
         {activeToolTab === "tuner" && (
-          <div className="animate-in fade-in zoom-in-95 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-10 flex flex-col items-center justify-center space-y-12 shadow-sm">
-            <div className="text-center">
-              <span
-                className={`text-8xl font-black transition-colors ${isTunerActive ? "text-emerald-500" : "text-zinc-200 dark:text-zinc-800"}`}
-              >
-                E
-              </span>
-              <p
-                className={`text-[10px] font-bold uppercase tracking-widest mt-4 ${isTunerActive ? "text-emerald-500" : "text-zinc-300 dark:text-zinc-700"}`}
-              >
-                In Tune
-              </p>
+          <div className="animate-in fade-in zoom-in-95 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-6 sm:p-10 md:p-16 flex flex-col items-center justify-center space-y-8 sm:space-y-12 shadow-sm">
+            <div className="text-center space-y-6">
+              {/* Detected Note */}
+              <div className="space-y-2">
+                <span
+                  className={`text-7xl sm:text-8xl md:text-9xl font-black transition-colors ${
+                    isTunerActive && detectedNote
+                      ? Math.abs(cents) < 5
+                        ? "text-emerald-500"
+                        : Math.abs(cents) < 20
+                        ? "text-amber-500"
+                        : "text-red-500"
+                      : "text-zinc-200 dark:text-zinc-800"
+                  }`}
+                >
+                  {detectedNote || '—'}
+                </span>
+                <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                  {isTunerActive ? (detectedFrequency > 0 ? `${detectedFrequency.toFixed(1)} Hz` : 'Listening...') : 'Chromatic Tuner'}
+                </p>
+              </div>
+
+              {/* Tuning Indicator */}
+              {isTunerActive && detectedNote && (
+                <div className="w-full max-w-md space-y-4">
+                  {/* Visual tuning bar */}
+                  <div className="relative h-12 bg-zinc-100 dark:bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800">
+                    {/* Center line */}
+                    <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-zinc-400 dark:bg-zinc-600 z-10" />
+                    
+                    {/* Tuning indicator */}
+                    <div
+                      className={`absolute top-1/2 -translate-y-1/2 w-2 h-8 rounded-full transition-all duration-100 ${
+                        Math.abs(cents) < 5
+                          ? "bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.8)]"
+                          : Math.abs(cents) < 20
+                          ? "bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.6)]"
+                          : "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]"
+                      }`}
+                      style={{
+                        left: `calc(50% + ${Math.max(-45, Math.min(45, cents))}%)`,
+                        transform: 'translateX(-50%) translateY(-50%)'
+                      }}
+                    />
+                    
+                    {/* Gradient zones */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-emerald-500/10 to-red-500/10" />
+                  </div>
+
+                  {/* Cents display */}
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className={`text-2xl sm:text-3xl font-black tabular-nums ${
+                      Math.abs(cents) < 5
+                        ? "text-emerald-500"
+                        : Math.abs(cents) < 20
+                        ? "text-amber-500"
+                        : "text-red-500"
+                    }`}>
+                      {cents > 0 ? '+' : ''}{cents}
+                    </span>
+                    <span className="text-xs font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                      cents
+                    </span>
+                  </div>
+
+                  {/* Status text */}
+                  <p className={`text-sm font-black uppercase tracking-widest ${
+                    Math.abs(cents) < 5
+                      ? "text-emerald-500"
+                      : cents > 0
+                      ? "text-red-500"
+                      : "text-red-500"
+                  }`}>
+                    {Math.abs(cents) < 5 ? '✓ In Tune' : cents > 0 ? '↑ Too Sharp' : '↓ Too Flat'}
+                  </p>
+                </div>
+              )}
             </div>
+
+            {/* Control Button */}
             <button
-              onClick={() => setIsTunerActive(!isTunerActive)}
-              className={`px-10 py-4 rounded-2xl font-black text-sm transition-all ${isTunerActive ? "bg-zinc-800 text-white" : "bg-indigo-600 text-white shadow-xl shadow-indigo-600/20"}`}
+              onClick={() => isTunerActive ? stopTuner() : startTuner()}
+              className={`px-8 sm:px-10 py-4 sm:py-5 rounded-[1.5rem] font-black text-sm sm:text-base uppercase tracking-widest transition-all hover:scale-105 active:scale-95 ${
+                isTunerActive 
+                  ? "bg-red-600 text-white shadow-2xl shadow-red-600/30 hover:bg-red-700" 
+                  : "bg-indigo-600 text-white shadow-2xl shadow-indigo-600/30 hover:bg-indigo-700"
+              }`}
             >
-              {isTunerActive ? "Disable Tuner" : "Enable Microphone"}
+              {isTunerActive ? "Stop Tuner" : "Start Tuner"}
             </button>
+
+            {/* Guitar String Reference */}
+            <div className="w-full max-w-md">
+              <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-600 text-center mb-4">
+                Standard Tuning Reference
+              </p>
+              <div className="grid grid-cols-6 gap-2">
+                {[
+                  { string: '6', note: 'E2', freq: '82.4' },
+                  { string: '5', note: 'A2', freq: '110.0' },
+                  { string: '4', note: 'D3', freq: '146.8' },
+                  { string: '3', note: 'G3', freq: '196.0' },
+                  { string: '2', note: 'B3', freq: '246.9' },
+                  { string: '1', note: 'E4', freq: '329.6' }
+                ].map((s) => (
+                  <div key={s.string} className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 text-center">
+                    <p className="text-xs font-black text-zinc-400 dark:text-zinc-600 mb-1">{s.string}</p>
+                    <p className="text-lg font-black text-zinc-900 dark:text-white">{s.note}</p>
+                    <p className="text-[8px] font-bold text-zinc-400 dark:text-zinc-600">{s.freq}Hz</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
