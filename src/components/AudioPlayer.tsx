@@ -44,6 +44,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState(false);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const [isTitleOverflowing, setIsTitleOverflowing] = useState(false);
 
   // Audio event handlers
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,6 +126,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       }
     }
   }, [playerState.isPlaying, playerState.currentTrack, playerState.volume, playerState.playbackRate, setPlayerState]);
+
+  // Check if title is overflowing
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (titleRef.current) {
+        const isOverflowing = titleRef.current.scrollWidth > titleRef.current.clientWidth;
+        setIsTitleOverflowing(isOverflowing);
+      }
+    };
+
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+    return () => window.removeEventListener('resize', checkOverflow);
+  }, [playerState.currentTrack?.title]);
 
   const handleClose = useCallback(() => {
     setPlayerState(prev => ({ 
@@ -309,7 +325,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             </div>
             <div className="min-w-0 flex-1 text-left overflow-hidden">
               <div className="overflow-hidden mb-0.5">
-                <h4 className={`font-black text-zinc-900 dark:text-white leading-tight transition-all whitespace-nowrap inline-block ${isMobileExpanded ? 'text-lg' : 'text-xs lg:text-sm'} animate-slide-title`}>
+                <h4 
+                  ref={titleRef}
+                  className={`font-black text-zinc-900 dark:text-white leading-tight transition-all whitespace-nowrap inline-block ${isMobileExpanded ? 'text-lg' : 'text-xs lg:text-sm'} ${isTitleOverflowing ? 'animate-slide-title' : ''}`}
+                >
                   {playerState.currentTrack?.title}
                 </h4>
               </div>

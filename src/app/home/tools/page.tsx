@@ -1,80 +1,23 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
-import {
-  Play,
-  Pause,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  Search,
-  Music2,
-  Mic2,
-  Settings,
-  History,
-  Heart,
-  Clock,
-  ListMusic,
-  Gauge,
-  Repeat,
-  Info,
-  Sparkles,
-  X,
-  ChevronRight,
-  ChevronLeft,
-  LayoutDashboard,
-  LogOut,
-  Users,
-  Library,
-  Disc,
-  Star,
-  Plus,
-  Trash2,
-  Edit2,
-  MoreVertical,
-  Save,
-  User as UserIcon,
-  ChevronDown,
-  Menu,
-  ChevronUp,
-  Wrench,
-  Fingerprint,
-  Hash,
-  Zap,
-  Grid,
-  Anchor,
-  Moon,
-  Sun,
-  FolderPlus,
-  Music,
-  ArrowLeft,
-  ExternalLink,
-  BookOpen,
-  Lightbulb,
-  Share2,
-} from "lucide-react";
-import {
-  BackingTrack,
-  PlayerState,
-  TheoryInsight,
-  User,
-  Playlist,
-} from "../../../types/types";
+import React, { useState } from "react";
+import Chord from '@tombatossals/react-chords/lib/Chord'
+import { Play, Pause, Gauge, Hash, Zap, Grid } from "lucide-react";
+import guitarDb from '@tombatossals/chords-db/lib/guitar.json';
 
-type DashboardView =
-  | "home"
-  | "artists"
-  | "tracks"
-  | "playlists"
-  | "favorites"
-  | "tools";
 type ToolTab = "metronome" | "tuner" | "chord-library" | "scales";
 
-const ITEMS_PER_PAGE = 10;
-const ARTISTS_PER_PAGE = 12;
-
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const CHORD_VARIATIONS = ["Maj", "Min", "7", "Maj7", "m7", "sus2", "sus4"];
+
+// Map NOTES to the keys used in guitar.json
+const NOTE_TO_DB_KEY: Record<string, string> = {
+  "C": "C", "C#": "Csharp", "D": "D", "D#": "Eb", "E": "E", "F": "F", 
+  "F#": "Fsharp", "G": "G", "G#": "Ab", "A": "A", "A#": "Bb", "B": "B"
+};
+
+// Get available suffixes from the DB
+const CHORD_VARIATIONS = guitarDb.suffixes;
+
 const SCALES_DATA: Record<string, number[]> = {
   Major: [0, 2, 4, 5, 7, 9, 11],
   Minor: [0, 2, 3, 5, 7, 8, 10],
@@ -85,75 +28,7 @@ const SCALES_DATA: Record<string, number[]> = {
   Mixolydian: [0, 2, 4, 5, 7, 9, 10],
 };
 
-const CHORD_DATA: Record<string, Record<string, number[]>> = {
-  C: {
-    Maj: [-1, 3, 2, 0, 1, 0],
-    Min: [-1, 3, 5, 5, 4, 3],
-    "7": [-1, 3, 2, 3, 1, 0],
-    Maj7: [-1, 3, 2, 0, 0, 0],
-    m7: [-1, 3, 5, 3, 4, 3],
-    sus2: [-1, 3, 0, 0, 1, -1],
-    sus4: [-1, 3, 3, 0, 1, 1],
-  },
-  D: {
-    Maj: [-1, -1, 0, 2, 3, 2],
-    Min: [-1, -1, 0, 2, 3, 1],
-    "7": [-1, -1, 0, 2, 1, 2],
-    Maj7: [-1, -1, 0, 2, 2, 2],
-    m7: [-1, -1, 0, 2, 1, 1],
-    sus2: [-1, -1, 0, 2, 3, 0],
-    sus4: [-1, -1, 0, 2, 3, 3],
-  },
-  E: {
-    Maj: [0, 2, 2, 1, 0, 0],
-    Min: [0, 2, 2, 0, 0, 0],
-    "7": [0, 2, 0, 1, 0, 0],
-    Maj7: [0, 2, 1, 1, 0, 0],
-    m7: [0, 2, 0, 0, 0, 0],
-    sus2: [0, 2, 2, 4, 0, 0],
-    sus4: [0, 2, 2, 2, 0, 0],
-  },
-  F: {
-    Maj: [1, 3, 3, 2, 1, 1],
-    Min: [1, 3, 3, 1, 1, 1],
-    "7": [1, 3, 1, 2, 1, 1],
-    Maj7: [-1, -1, 3, 2, 1, 0],
-    m7: [1, 3, 1, 1, 1, 1],
-    sus2: [1, 3, 3, 0, 1, 1],
-    sus4: [1, 3, 3, 3, 1, 1],
-  },
-  G: {
-    Maj: [3, 2, 0, 0, 0, 3],
-    Min: [3, 5, 5, 3, 3, 3],
-    "7": [3, 2, 0, 0, 0, 1],
-    Maj7: [3, 2, 0, 0, 0, 2],
-    m7: [3, 1, 0, 0, 3, 1],
-    sus2: [3, 0, 0, 0, 3, 3],
-    sus4: [3, 3, 0, 0, 3, 3],
-  },
-  A: {
-    Maj: [-1, 0, 2, 2, 2, 0],
-    Min: [-1, 0, 2, 2, 1, 0],
-    "7": [-1, 0, 2, 0, 2, 0],
-    Maj7: [-1, 0, 2, 1, 2, 0],
-    m7: [-1, 0, 2, 0, 1, 0],
-    sus2: [-1, 0, 2, 2, 0, 0],
-    sus4: [-1, 0, 2, 2, 3, 0],
-  },
-  B: {
-    Maj: [-1, 2, 4, 4, 4, 2],
-    Min: [-1, 2, 4, 4, 3, 2],
-    "7": [-1, 2, 4, 2, 4, 2],
-    Maj7: [-1, 2, 4, 3, 4, 2],
-    m7: [-1, 2, 4, 2, 3, 2],
-    sus2: [-1, 2, 4, 4, 2, 2],
-    sus4: [-1, 2, 4, 4, 5, 2],
-  },
-};
-
-const STRINGS_BASE_NOTES = [4, 11, 7, 2, 9, 4]; // E2, A2, D3, G3, B3, E4 indices
-
-
+const STRINGS_BASE_NOTES = [4, 9, 2, 7, 11, 4];
 export default function ToolsPage() {
   const [activeToolTab, setActiveToolTab] = useState<ToolTab>("metronome");
   // tools
@@ -162,10 +37,24 @@ export default function ToolsPage() {
   const [metronomeTick, setMetronomeTick] = useState(0);
   const [isTunerActive, setIsTunerActive] = useState(false);
   const [selectedChordRoot, setSelectedChordRoot] = useState("C");
-  const [selectedChordType, setSelectedChordType] = useState("Maj");
-  const [selectedScaleRoot, setSelectedScaleRoot] = useState("C");
+  const [selectedChordType, setSelectedChordType] = useState("major");
+  const [selectedScaleRoot, setSelectedScaleRoot] = useState("A");
   const [selectedScaleType, setSelectedScaleType] = useState("Major");
-  const currentChord = CHORD_DATA[selectedChordRoot]?.[selectedChordType] || null;
+
+  // Get chord data from DB
+  const dbKey = NOTE_TO_DB_KEY[selectedChordRoot];
+  const chordOptions = (guitarDb.chords as any)[dbKey] || [];
+  const availableSuffixes = chordOptions.map((c: any) => c.suffix);
+  const chordPositions = chordOptions.find((c: any) => c.suffix === selectedChordType)?.positions;
+
+  const handleChordRootChange = (note: string) => {
+    setSelectedChordRoot(note);
+    const newDbKey = NOTE_TO_DB_KEY[note];
+    const nextAvailable = (guitarDb.chords as any)[newDbKey]?.map((c: any) => c.suffix) || [];
+    if (!nextAvailable.includes(selectedChordType)) {
+      setSelectedChordType(nextAvailable[0] || "major");
+    }
+  };
   const isNoteInScale = (
     stringIndex: number,
     fret: number,
@@ -290,84 +179,63 @@ export default function ToolsPage() {
           <div className="animate-in fade-in zoom-in-95 space-y-8">
             <div className="flex flex-wrap gap-4 items-center justify-between">
               <div className="flex space-x-2 bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-x-auto scrollbar-hide">
-                {NOTES.filter((n) =>
-                  ["C", "D", "E", "F", "G", "A", "B"].includes(n),
-                ).map((note) => (
+                {NOTES.map((note) => (
                   <button
                     key={note}
-                    onClick={() => setSelectedChordRoot(note)}
-                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${selectedChordRoot === note ? "bg-indigo-600 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"}`}
+                    onClick={() => handleChordRootChange(note)}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 ${selectedChordRoot === note ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800"}`}
                   >
                     {note}
                   </button>
                 ))}
               </div>
-              <div className="flex space-x-2 bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-x-auto scrollbar-hide">
-                {CHORD_VARIATIONS.map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setSelectedChordType(type)}
-                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${selectedChordType === type ? "bg-indigo-600 text-white shadow-lg" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300"}`}
-                  >
-                    {type}
-                  </button>
-                ))}
+              <div className="flex space-x-2 bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-x-auto scrollbar-hide max-w-full md:max-w-xl">
+                {CHORD_VARIATIONS.map((type) => {
+                  const isAvailable = availableSuffixes.includes(type);
+                  if (!isAvailable) return null; // 👈 hide instead of disable
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedChordType(type)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                        selectedChordType === type
+                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 scale-105"
+                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:scale-105 active:scale-95"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-
-            <div className="flex flex-col md:flex-row gap-12 items-center justify-center p-12 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-[3rem]">
-              <div className="text-center md:text-left space-y-2">
-                <h3 className="text-4xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">
+            <div className="flex flex-col gap-12 items-center justify-center p-8 md:p-12 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-[3rem] shadow-sm">
+              <div className="text-center space-y-2">
+                <h3 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">
                   {selectedChordRoot} {selectedChordType}
                 </h3>
-                <p className="text-zinc-500 font-medium">
-                  Common voicing for guitar.
+                <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+                  {chordPositions?.length || 0} Variations Found
                 </p>
               </div>
 
-              <div className="relative p-8 bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl border border-zinc-200 dark:border-zinc-800">
-                <div className="w-48 h-64 border-l-2 border-zinc-300 dark:border-zinc-700 relative flex justify-between px-2 pt-8">
-                  <div className="absolute top-0 left-0 w-full h-2 bg-zinc-800 dark:bg-zinc-100 rounded-full" />
-                  {[1, 2, 3, 4, 5].map((f) => (
-                    <div
-                      key={f}
-                      className="absolute w-full h-px bg-zinc-200 dark:bg-zinc-700"
-                      style={{ top: `${f * 20 + 8}%` }}
-                    />
-                  ))}
-                  {STRINGS_BASE_NOTES.map((_, sIdx) => {
-                    const fret = currentChord
-                      ? currentChord[5 - sIdx]
-                      : -1;
-                    return (
-                      <div
-                        key={sIdx}
-                        className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative"
-                      >
-                        {fret === 0 && (
-                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-emerald-500">
-                            O
-                          </div>
-                        )}
-                        {fret === -1 && (
-                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-red-500">
-                            X
-                          </div>
-                        )}
-                        {fret > 0 && (
-                          <div
-                            className="absolute w-6 h-6 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-[11px] shadow-lg shadow-indigo-600/30 flex items-center justify-center text-[8px] text-white font-black"
-                            style={{
-                              top: `${(fret - 0.5) * 20 + 8}%`,
-                            }}
-                          >
-                            {fret}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
+                {chordPositions?.map((chord: any, index: number) => (
+                  <div key={index} className="relative p-8 md:p-10 bg-zinc-50 dark:bg-zinc-900 rounded-[2rem] shadow-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center group">
+                    <span className="absolute top-6 right-8 text-[8px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      Position {index + 1}
+                    </span>
+                    <div className="w-40 md:w-48">
+                      <Chord
+                        chord={chord}
+                        instrument={{
+                          ...(guitarDb.main as any),
+                          tunings: guitarDb.tunings
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
