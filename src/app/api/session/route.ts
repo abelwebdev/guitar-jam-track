@@ -23,15 +23,34 @@ export async function POST(req: Request) {
     let dbUser = await prisma.users.findUnique({
       where: { firebase_user_id: uid },
     });
+    
     if (!dbUser) {
-      dbUser = await prisma.users.create({
-        data: {
-          firebase_user_id: uid,
-          email,
-          username,
-          img,
-        },
+      // Check if user exists with same email but different firebase_user_id
+      const existingUserByEmail = await prisma.users.findUnique({
+        where: { email },
       });
+      
+      if (existingUserByEmail) {
+        // Update existing user with new firebase_user_id
+        dbUser = await prisma.users.update({
+          where: { email },
+          data: {
+            firebase_user_id: uid,
+            img: img || existingUserByEmail.img,
+            username: username || existingUserByEmail.username,
+          },
+        });
+      } else {
+        // Create new user
+        dbUser = await prisma.users.create({
+          data: {
+            firebase_user_id: uid,
+            email,
+            username,
+            img,
+          },
+        });
+      }
     }
     // create Firebase session cookie
     const expiresIn = 60 * 60 * 24 * 5 * 1000;

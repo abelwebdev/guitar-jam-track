@@ -293,7 +293,6 @@ export default function TracksPage() {
 
   // API queries
   const { data: tracksData, isLoading: tracksLoading } = useGetAllTracksQuery();
-  console.log("tracksdata: ", tracksData);
   const { data: playlists = [], refetch: refetchPlaylists } = useGetPlaylistQuery();
   const { data: favoritesData = [] } = useGetFavoritesQuery();
   const [addTrackToPlaylist, { isLoading: isAddingToPlaylist }] = useAddTrackToPlaylistMutation();
