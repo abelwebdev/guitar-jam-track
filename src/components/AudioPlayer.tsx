@@ -2,8 +2,10 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { Play, Pause, Volume2, SkipBack, SkipForward, Repeat, Anchor, Gauge, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { Play, Pause, Volume2, SkipBack, SkipForward, Repeat, Anchor, Gauge, X, ChevronUp, ChevronDown, Download, Loader2 } from 'lucide-react';
 import { BackingTrack, PlayerState } from '@/types/types';
+import { useLazyDownloadTrackQuery } from "@/services/api";
+import { toast } from "sonner";
 
 // Helper to get correct track URL
 const getTrackUrl = (url: string | undefined): string => {
@@ -36,6 +38,8 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   loopB,
   setLoopB
 }) => {
+  const [triggerDownload, { isFetching: isDownloading }] = useLazyDownloadTrackQuery();
+  const [downloadingTrackUrl, setDownloadingTrackUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState(false);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
@@ -131,6 +135,36 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     }));
     setIsMobileExpanded(false);
   }, [setPlayerState]);
+
+  const handleDownload = async () => {
+    if (!playerState.currentTrack) return;
+
+    const trackUrl = getTrackUrl(playerState.currentTrack.track_url || playerState.currentTrack.audioUrl);
+    if (!trackUrl) return;
+
+    setDownloadingTrackUrl(trackUrl);
+    try {
+      const { data: blob } = await triggerDownload(trackUrl);
+      if (blob) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const filename = trackUrl.split('/').pop() || 'track.mp3';
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        toast.error("Failed to download track");
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error("Download failed. Please try again.");
+    } finally {
+      setDownloadingTrackUrl(null);
+    }
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -286,9 +320,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           </div>
 
           {/* Center: Controls */}
-          <div className={`${isMobileExpanded ? 'flex-1 flex-col space-y-4' : 'flex-none flex-row justify-end space-y-0 gap-2'} flex items-center lg:flex-1 lg:justify-center lg:space-y-1 lg:w-auto`}>
+          <div className={`${isMobileExpanded ? 'flex-1 flex-col space-y-4 items-stretch' : 'flex-none flex-row justify-end space-y-0 gap-2 items-center'} flex lg:flex-1 lg:justify-center lg:items-center lg:space-y-1 lg:w-auto`}>
             {/* Primary Controls */}
-            <div className="flex items-center justify-between lg:justify-center w-full lg:w-auto space-x-0 lg:space-x-8">
+            <div className="flex items-center justify-center lg:justify-center w-full lg:w-auto space-x-4 lg:space-x-4">
               
               {/* Loop Controls Container (Mobile: Only in expanded, Desktop: Always) */}
               <div className={`${isMobileExpanded ? 'flex' : 'hidden'} lg:flex items-center bg-zinc-100 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-xl px-2 lg:px-3 py-1 space-x-2 lg:space-x-3`}>
@@ -316,7 +350,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               </div>
 
                {/* Transport Controls */}
-              <div className="flex items-center justify-center space-x-4 lg:space-x-6 flex-1 lg:flex-none">
+              <div className="flex items-center justify-center space-x-4 lg:space-x-4 flex-1 lg:flex-none">
                 <button 
                   onClick={() => skipTime(-5)}
                   className={`${isMobileExpanded ? 'block' : 'hidden'} lg:block p-2 lg:p-1.5 text-zinc-400 dark:text-zinc-600 hover:text-indigo-600 transition-colors`}
@@ -356,7 +390,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             </div>
 
             {/* Mobile Expanded Secondary Controls (Speed & Volume) */}
-            <div className={`${isMobileExpanded ? 'flex' : 'hidden'} lg:hidden w-full items-center justify-between space-x-4 pt-2 border-t border-zinc-100 dark:border-zinc-800/50 mt-4`}>
+            <div className={`${isMobileExpanded ? 'flex' : 'hidden'} lg:hidden w-full items-center justify-between gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/50 mt-4`}>
                 {/* Speed Control */}
                 <div className="relative">
                   <button 
@@ -387,9 +421,23 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   )}
                 </div>
 
+                {/* Download Button (Mobile) */}
+                <button
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className={`p-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-400 hover:text-indigo-600 transition-colors disabled:cursor-not-allowed ${isDownloading ? 'cursor-not-allowed' : ''}`}
+                    title={isDownloading ? "Downloading..." : "Download Track"}
+                  >
+                    {isDownloading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Download size={16} />
+                    )}
+                </button>
+
                 {/* Volume Control */}
-                <div className="flex items-center space-x-2 flex-1 md:flex-none md:w-32">
-                  <Volume2 size={16} className="text-zinc-400 dark:text-zinc-600" />
+                <div className="flex items-center space-x-2 flex-1 md:flex-none md:w-32 min-w-0">
+                  <Volume2 size={16} className="text-zinc-400 dark:text-zinc-600 shrink-0" />
                   <input 
                     type="range" 
                     min="0" 
@@ -397,14 +445,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                     step="0.01" 
                     value={playerState.volume} 
                     onChange={(e) => setPlayerState(prev => ({ ...prev, volume: parseFloat(e.target.value) }))} 
-                    className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-600" 
+                    className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-600 min-w-0" 
                   />
                 </div>
             </div>
           </div>
 
           {/* Right: Desktop Controls (Speed, Volume, Close) */}
-          <div className="hidden lg:flex lg:w-[30%] items-center justify-end space-x-4 lg:space-x-6 xl:space-x-8">
+          <div className="hidden lg:flex lg:w-[30%] items-center justify-end space-x-4">
             {/* Speed Control Menu */}
             <div className="relative">
               <button 
@@ -435,6 +483,20 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                 </>
               )}
             </div>
+
+            {/* Download Button (Desktop) */}
+            <button
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className={`p-2 text-zinc-400 hover:text-indigo-600 transition-colors disabled:cursor-not-allowed ${isDownloading ? 'cursor-not-allowed' : ''}`}
+                title={isDownloading ? "Downloading..." : "Download Track"}
+              >
+                {isDownloading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Download size={18} />
+                )}
+            </button>
 
             <div className="flex items-center space-x-2 lg:space-x-3 w-28 lg:w-48 xl:w-56 transition-all">
               <Volume2 size={16} className="lg:w-5 lg:h-5 text-zinc-400 dark:text-zinc-600" />
