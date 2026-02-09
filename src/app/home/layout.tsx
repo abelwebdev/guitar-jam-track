@@ -143,9 +143,6 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user && !isAuthChecking) {
-    return null;
-  }
   return (
     <div className="min-h-screen">
       <Toaster
