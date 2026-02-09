@@ -6,18 +6,14 @@ import { Play, Pause, Gauge, Hash, Zap, Grid } from "lucide-react";
 import guitarDb from '@tombatossals/chords-db/lib/guitar.json';
 
 type ToolTab = "metronome" | "tuner" | "chord-library" | "scales";
-
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-
 // Map NOTES to the keys used in guitar.json
 const NOTE_TO_DB_KEY: Record<string, string> = {
   "C": "C", "C#": "Csharp", "D": "D", "D#": "Eb", "E": "E", "F": "F", 
   "F#": "Fsharp", "G": "G", "G#": "Ab", "A": "A", "A#": "Bb", "B": "B"
 };
-
 // Get available suffixes from the DB
 const CHORD_VARIATIONS = guitarDb.suffixes;
-
 const SCALES_DATA: Record<string, number[]> = {
   Major: [0, 2, 4, 5, 7, 9, 11],
   Minor: [0, 2, 3, 5, 7, 8, 10],
@@ -32,9 +28,14 @@ const STRINGS_BASE_NOTES = [4, 9, 2, 7, 11, 4];
 export default function ToolsPage() {
   const [activeToolTab, setActiveToolTab] = useState<ToolTab>("metronome");
   // tools
-  const [metronomeBpm, setMetronomeBpm] = useState(120);
+  const [metronomeBpm, setMetronomeBpm] = useState(60);
   const [isMetronomePlaying, setIsMetronomePlaying] = useState(false);
   const [metronomeTick, setMetronomeTick] = useState(0);
+  const [metronomeTimeSignature, setMetronomeTimeSignature] = useState<'2/4' | '3/4' | '4/4' | '5/4' | '6/8' | '7/8'>('4/4');
+  const [metronomeVolume, setMetronomeVolume] = useState(0.3);
+  const [metronomeSoundType, setMetronomeSoundType] = useState<'click' | 'beep' | 'wood' | 'digital'>('click');
+  const metronomeIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const audioContextRef = React.useRef<AudioContext | null>(null);
   const [isTunerActive, setIsTunerActive] = useState(false);
   const [selectedChordRoot, setSelectedChordRoot] = useState("C");
   const [selectedChordType, setSelectedChordType] = useState("major");
@@ -55,6 +56,97 @@ export default function ToolsPage() {
       setSelectedChordType(nextAvailable[0] || "major");
     }
   };
+
+  // Metronome audio playback
+  const playMetronomeClick = (isAccent: boolean) => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    
+    const ctx = audioContextRef.current;
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    const baseVolume = metronomeVolume;
+    const volume = isAccent ? baseVolume : baseVolume * 0.5;
+    
+    // Different sound types
+    switch (metronomeSoundType) {
+      case 'click':
+        // Sharp, short click
+        oscillator.frequency.value = isAccent ? 1000 : 800;
+        gainNode.gain.value = volume;
+        oscillator.start(ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        oscillator.stop(ctx.currentTime + 0.05);
+        break;
+        
+      case 'beep':
+        // Longer, softer beep
+        oscillator.frequency.value = isAccent ? 880 : 660;
+        oscillator.type = 'sine';
+        gainNode.gain.value = volume * 0.8;
+        oscillator.start(ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        oscillator.stop(ctx.currentTime + 0.1);
+        break;
+        
+      case 'wood':
+        // Woody, percussive sound
+        oscillator.frequency.value = isAccent ? 200 : 150;
+        oscillator.type = 'triangle';
+        gainNode.gain.value = volume;
+        oscillator.start(ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+        oscillator.stop(ctx.currentTime + 0.08);
+        break;
+        
+      case 'digital':
+        // Electronic, square wave
+        oscillator.frequency.value = isAccent ? 1200 : 900;
+        oscillator.type = 'square';
+        gainNode.gain.value = volume * 0.6;
+        oscillator.start(ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
+        oscillator.stop(ctx.currentTime + 0.06);
+        break;
+    }
+  };
+
+  // Metronome effect
+  React.useEffect(() => {
+    if (isMetronomePlaying) {
+      // Get beats per measure from time signature
+      const beatsPerMeasure = parseInt(metronomeTimeSignature.split('/')[0]);
+      const interval = 60000 / metronomeBpm;
+      let currentBeat = 0;
+      
+      // Play immediately on start
+      playMetronomeClick(true);
+      setMetronomeTick(0);
+      
+      metronomeIntervalRef.current = setInterval(() => {
+        currentBeat = (currentBeat + 1) % beatsPerMeasure;
+        setMetronomeTick(currentBeat);
+        playMetronomeClick(currentBeat === 0);
+      }, interval);
+      
+      return () => {
+        if (metronomeIntervalRef.current) {
+          clearInterval(metronomeIntervalRef.current);
+        }
+      };
+    } else {
+      if (metronomeIntervalRef.current) {
+        clearInterval(metronomeIntervalRef.current);
+      }
+      setMetronomeTick(0);
+    }
+  }, [isMetronomePlaying, metronomeBpm, metronomeTimeSignature, metronomeVolume, metronomeSoundType]);
+
   const isNoteInScale = (
     stringIndex: number,
     fret: number,
@@ -104,50 +196,181 @@ export default function ToolsPage() {
 
       <div className="min-h-[400px]">
         {activeToolTab === "metronome" && (
-          <div className="animate-in fade-in zoom-in-95 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-10 md:p-16 flex flex-col items-center justify-center space-y-12 relative overflow-hidden shadow-sm">
+          <div className="animate-in fade-in zoom-in-95 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-[2.5rem] p-6 sm:p-10 md:p-16 flex flex-col items-center justify-center space-y-8 sm:space-y-12 relative overflow-hidden shadow-sm">
+            {/* Visual indicator bar */}
             <div
-              className={`absolute top-0 left-0 right-0 h-1 bg-indigo-600 transition-opacity duration-75 ${metronomeTick === 0 ? "opacity-100" : "opacity-0"}`}
+              className={`absolute top-0 left-0 right-0 h-2 transition-all duration-75 ${metronomeTick === 0 ? "bg-indigo-600" : "bg-zinc-300 dark:bg-zinc-700"}`}
             />
-            <div className="text-center space-y-4">
-              <h3 className="text-7xl font-black text-zinc-900 dark:text-white tracking-tighter">
-                {metronomeBpm}
-                <span className="text-lg text-zinc-400 dark:text-zinc-600 ml-2">
-                  BPM
-                </span>
-              </h3>
-              <div className="flex space-x-3 justify-center">
-                {[0, 1, 2, 3].map((t) => (
+            
+            <div className="text-center space-y-4 sm:space-y-6">
+              {/* BPM Display */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 sm:gap-4">
+                  <button
+                    onClick={() => setMetronomeBpm(Math.max(40, metronomeBpm - 1))}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-200 transition-all hover:scale-110 active:scale-95 flex items-center justify-center font-black text-xl sm:text-2xl"
+                    title="Decrease BPM"
+                  >
+                    −
+                  </button>
+                  <h3 className="text-6xl sm:text-8xl md:text-9xl font-black text-zinc-900 dark:text-white tracking-tighter tabular-nums min-w-[150px] sm:min-w-[200px] md:min-w-[280px]">
+                    {metronomeBpm}
+                  </h3>
+                  <button
+                    onClick={() => setMetronomeBpm(Math.min(240, metronomeBpm + 1))}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-200 transition-all hover:scale-110 active:scale-95 flex items-center justify-center font-black text-xl sm:text-2xl"
+                    title="Increase BPM"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
+                  Beats Per Minute
+                </p>
+              </div>
+
+              {/* Start/Stop Button */}
+              <button
+                onClick={() => setIsMetronomePlaying(!isMetronomePlaying)}
+                className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full font-black flex items-center justify-center transition-all hover:scale-110 active:scale-95 mx-auto ${
+                  isMetronomePlaying 
+                    ? "bg-red-600 text-white shadow-2xl shadow-red-600/30 hover:bg-red-700" 
+                    : "bg-indigo-600 text-white shadow-2xl shadow-indigo-600/30 hover:bg-indigo-700"
+                }`}
+              >
+                {isMetronomePlaying ? (
+                  <Pause size={28} fill="white" className="sm:w-9 sm:h-9" />
+                ) : (
+                  <Play size={28} fill="white" className="ml-1 sm:w-9 sm:h-9" />
+                )}
+              </button>
+              
+              {/* Beat indicators */}
+              <div className="flex space-x-3 sm:space-x-4 justify-center">
+                {Array.from({ length: parseInt(metronomeTimeSignature.split('/')[0]) }).map((_, i) => (
                   <div
-                    key={t}
-                    className={`w-3 h-3 rounded-full transition-all duration-150 ${metronomeTick === t ? (t === 0 ? "bg-indigo-500 scale-150 shadow-[0_0_10px_rgba(99,102,241,0.5)]" : "bg-zinc-400") : "bg-zinc-200 dark:bg-zinc-800"}`}
+                    key={i}
+                    className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full transition-all duration-100 ${
+                      metronomeTick === i 
+                        ? i === 0 
+                          ? "bg-indigo-600 scale-150 shadow-[0_0_20px_rgba(99,102,241,0.8)]" 
+                          : "bg-indigo-400 scale-125 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                        : "bg-zinc-200 dark:bg-zinc-800 scale-100"
+                    }`}
                   />
                 ))}
               </div>
             </div>
-            <div className="w-full max-w-sm space-y-8">
-              <input
-                type="range"
-                min="40"
-                max="220"
-                value={metronomeBpm}
-                onChange={(e) =>
-                  setMetronomeBpm(parseInt(e.target.value))
-                }
-                className="w-full accent-indigo-600 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer"
-              />
-              <button
-                onClick={() =>
-                  setIsMetronomePlaying(!isMetronomePlaying)
-                }
-                className={`w-full py-5 rounded-[1.5rem] font-black text-base flex items-center justify-center space-x-3 transition-all ${isMetronomePlaying ? "bg-zinc-800 text-white shadow-xl" : "bg-indigo-600 text-white shadow-2xl shadow-indigo-600/30"}`}
-              >
-                {isMetronomePlaying ? (
-                  <Pause size={24} fill="white" />
-                ) : (
-                  <Play size={24} fill="white" className="ml-1" />
-                )}
-                <span>{isMetronomePlaying ? "Stop" : "Start"}</span>
-              </button>
+
+            {/* Controls */}
+            <div className="w-full max-w-md space-y-6 sm:space-y-8">
+              {/* BPM Slider */}
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-center justify-between text-[10px] sm:text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                  <span>40</span>
+                  <span>Tempo</span>
+                  <span>240</span>
+                </div>
+                <input
+                  type="range"
+                  min="40"
+                  max="220"
+                  value={metronomeBpm}
+                  onChange={(e) => setMetronomeBpm(parseInt(e.target.value))}
+                  className="w-full accent-indigo-600 h-1.5 sm:h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer hover:h-2 sm:hover:h-2.5 transition-all"
+                />
+              </div>
+
+              {/* Volume Control */}
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-center justify-between text-[10px] sm:text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                  <span>0%</span>
+                  <span>Volume</span>
+                  <span>100%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={metronomeVolume}
+                  onChange={(e) => setMetronomeVolume(parseFloat(e.target.value))}
+                  className="w-full accent-indigo-600 h-1.5 sm:h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer hover:h-2 sm:hover:h-2.5 transition-all"
+                />
+              </div>
+
+              {/* Time Signature */}
+              <div className="space-y-3 sm:space-y-4">
+                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 block text-center">
+                  Time Signature
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: '2/4', label: '2/4' },
+                    { value: '3/4', label: '3/4' },
+                    { value: '4/4', label: '4/4' },
+                    { value: '5/4', label: '5/4' },
+                    { value: '6/8', label: '6/8' },
+                    { value: '7/8', label: '7/8' }
+                  ].map((sig) => (
+                    <button
+                      key={sig.value}
+                      onClick={() => setMetronomeTimeSignature(sig.value as any)}
+                      className={`px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl font-black text-sm sm:text-base transition-all ${
+                        metronomeTimeSignature === sig.value
+                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:scale-105"
+                      }`}
+                    >
+                      {sig.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sound Type */}
+              <div className="space-y-3 sm:space-y-4">
+                <label className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 block text-center">
+                  Sound Type
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'click', label: 'Click' },
+                    { value: 'beep', label: 'Beep' },
+                    { value: 'wood', label: 'Wood' },
+                    { value: 'digital', label: 'Digital' }
+                  ].map((sound) => (
+                    <button
+                      key={sound.value}
+                      onClick={() => setMetronomeSoundType(sound.value as any)}
+                      className={`px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl font-black text-[10px] sm:text-xs uppercase tracking-widest transition-all ${
+                        metronomeSoundType === sound.value
+                          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30"
+                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:scale-105"
+                      }`}
+                    >
+                      {sound.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick BPM presets */}
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center pt-2 sm:pt-4">
+                {[60, 80, 100, 120, 140, 160, 180].map((bpm) => (
+                  <button
+                    key={bpm}
+                    onClick={() => setMetronomeBpm(bpm)}
+                    className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all ${
+                      metronomeBpm === bpm
+                        ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
+                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-300 hover:scale-105"
+                    }`}
+                  >
+                    {bpm}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
