@@ -3,14 +3,14 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
 import { 
   LayoutDashboard, LogOut, Users, Music2, Heart, ListMusic, Anchor, ChevronLeft,
-  Menu, X, User as UserIcon, Loader2, Lock, Trash2
+  Menu, X, User as UserIcon, Loader2, Mail, Trash2
 } from 'lucide-react';
 import Image from "next/image";
 import { useRouter, usePathname } from 'next/navigation';
 import { toast, Toaster } from "sonner";
-import { useGetUserQuery, useUpdateUserMutation, useDeleteUserMutation, useSessionLogoutMutation } from "@/services/api";
+import { useGetUserQuery, useDeleteUserMutation, useSessionLogoutMutation } from "@/services/api";
 import { auth } from "@/lib/firebaseClient";
-import { onAuthStateChanged, getIdToken } from "firebase/auth";
+import { onAuthStateChanged, getIdToken, sendPasswordResetEmail } from "firebase/auth";
 import AudioPlayer from "@/components/AudioPlayer";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { Audiowide } from 'next/font/google'
@@ -307,40 +307,30 @@ interface ProfileEditModalProps {
 }
 
 function ProfileEditModal({ isOpen, onClose, currentUser, idToken }: ProfileEditModalProps) {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSendingReset, setIsSendingReset] = useState(false);
   
   const router = useRouter();
-  const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
   const [logout] = useSessionLogoutMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!password) {
-      toast.error('Please enter a new password');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
+  const handleSendPasswordReset = async () => {
+    setIsSendingReset(true);
     try {
-      await updateUser({
-        idToken,
-        password,
-      }).unwrap();
-      
-      toast.success('Password updated successfully!');
-      setPassword('');
-      setConfirmPassword('');
-      onClose();
-    } catch (error) {
-      console.error('Failed to update password:', error);
-      toast.error('Failed to update password. Please try again.');
+      await sendPasswordResetEmail(auth, currentUser.email);
+      toast.success("Reset link sent", {
+        description: "Check your inbox for instructions."
+      });
+    } catch (error: any) {
+      console.error('Failed to send password reset email:', error);
+      if (error.code === "auth/too-many-requests") {
+        toast.error("Too many requests", {
+          description: "Wait a few minutes and try again."
+        });
+      } else {
+        toast.error("Failed to send reset email");
+      }
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -358,7 +348,7 @@ function ProfileEditModal({ isOpen, onClose, currentUser, idToken }: ProfileEdit
   };
 
   const confirmDelete = () => {
-    toast.error('Are you sure you want to delete your account? This action is permanent.', {
+    toast.error('Delete your account permanently?', {
       duration: 10000,
       action: {
         label: 'Delete Forever',
@@ -388,7 +378,7 @@ function ProfileEditModal({ isOpen, onClose, currentUser, idToken }: ProfileEdit
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="p-6 space-y-6">
             <div>
               <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
                 Email
@@ -402,34 +392,30 @@ function ProfileEditModal({ isOpen, onClose, currentUser, idToken }: ProfileEdit
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-white border-b border-zinc-100 dark:border-zinc-800 pb-2">Change Password</h3>
+              <h3 className="text-sm font-bold text-zinc-900 dark:text-white border-b border-zinc-100 dark:border-zinc-800 pb-2">Password</h3>
               
-              <div>
-                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
-                  <Lock size={16} className="inline mr-1.5" />
-                  New Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
-                  <Lock size={16} className="inline mr-1.5" />
-                  Confirm New Password
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  className="w-full px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
+              <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700">
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                  Click the button below to receive a password reset link via email.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleSendPasswordReset}
+                  disabled={isSendingReset || isDeleting}
+                  className="w-full px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSendingReset ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail size={18} />
+                      Send Reset Link
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -437,37 +423,23 @@ function ProfileEditModal({ isOpen, onClose, currentUser, idToken }: ProfileEdit
               <button
                 type="button"
                 onClick={confirmDelete}
-                disabled={isUpdating || isDeleting}
-                className="px-4 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all font-semibold flex items-center gap-2 group"
+                disabled={isSendingReset || isDeleting}
+                className="px-4 py-2.5 rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all font-semibold flex items-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 size={18} className="group-hover:scale-110 transition-transform" />
-                Delete
+                Delete Account
               </button>
               <div className="flex-1" />
               <button
                 type="button"
                 onClick={onClose}
-                disabled={isUpdating || isDeleting}
+                disabled={isSendingReset || isDeleting}
                 className="px-6 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isUpdating || isDeleting}
-                className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isUpdating ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Save'
-                )}
+                Close
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </>

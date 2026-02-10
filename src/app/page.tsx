@@ -399,8 +399,8 @@ export default function Header() {
                         <Zap size={16} />
                         <span>The Musician&apos;s Toolkit</span>
                       </div>
-                      <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white leading-tight tracking-tighter">Everything but the Strings. </h2>
-                      <p className="text-zinc-500 dark:text-zinc-400 text-lg leading-relaxed mx-auto lg:mx-0">RiffMaster eliminates the need for 5 different apps. We built the essential utilities directly into your practicing experience.</p>
+                      <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white leading-tight tracking-tighter">Everything but the Strings.</h2>
+                      <p className="text-zinc-500 dark:text-zinc-400 text-lg leading-relaxed mx-auto lg:mx-0">Guitar JamTrack eliminates the need for 5 different apps. We built the essential utilities directly into your practicing experience.</p>
                       <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto lg:mx-0">
                         <ToolkitItem icon={<Gauge size={16}/>} name="Metronome" active={activeToolkit === 'Metronome'} onActivate={() => setActiveToolkit('Metronome')} />
                         <ToolkitItem icon={<Zap size={16}/>} name="Tuner" active={activeToolkit === 'Tuner'} onActivate={() => setActiveToolkit('Tuner')} />
@@ -409,79 +409,140 @@ export default function Header() {
                       </div>
                     </div>
                     <div className="lg:w-2/3">
-                      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[3rem] p-12 relative group overflow-hidden min-h-[400px] flex flex-col justify-center shadow-xl transition-all">
+                      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[3rem] p-8 md:p-12 relative group overflow-hidden min-h-[400px] flex flex-col justify-center shadow-xl transition-all">
                         <div className="absolute inset-0 bg-indigo-600/5 group-hover:bg-indigo-600/10 transition-colors" />    
-                          {activeToolkit === 'Scales' && (
-                            <div className="relative z-10 space-y-12 animate-in fade-in slide-in-from-right-4 duration-500">
-                              <div className="flex items-center justify-between">
-                                  <div className="space-y-1 text-left">
-                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Scale Explorer</h3>
-                                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Dynamic Fretboard Visualization</p>
-                                  </div>
-                                  <div className="flex space-x-2">
-                                    <span className="bg-indigo-600 text-white text-[10px] font-black px-4 py-2 rounded-xl uppercase">E MINOR</span>
-                                  </div>
+                          {activeToolkit === 'Metronome' && (
+                            <div className="relative z-10 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 flex flex-col items-center">
+                              <div className="absolute top-0 left-0 right-0 h-2 bg-indigo-600 rounded-t-[3rem]" />
+                              <div className="text-center space-y-4">
+                                <div className="flex items-center justify-center gap-3">
+                                  <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 font-black text-xl">−</div>
+                                  <h3 className="text-7xl md:text-8xl font-black text-zinc-900 dark:text-white tracking-tighter tabular-nums">120</h3>
+                                  <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 font-black text-xl">+</div>
+                                </div>
+                                <p className="text-xs font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-600">Beats Per Minute</p>
                               </div>
-                              <div className="h-48 w-full bg-zinc-50 dark:bg-black/40 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 p-8 flex flex-col justify-between">
-                                {[1, 2, 3, 4].map(s => (
-                                  <div key={s} className="h-px w-full bg-zinc-200 dark:bg-zinc-800 relative">
-                                      {s === 2 && <div className="absolute left-1/4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-indigo-600 border-2 border-indigo-400 shadow-lg shadow-indigo-600/30" />}
-                                      {s === 3 && <div className="absolute left-1/2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-zinc-300 dark:bg-zinc-800 border-2 border-zinc-400 dark:border-zinc-700" />}
-                                  </div>
+                              <button className="w-16 h-16 rounded-full bg-indigo-600 text-white shadow-2xl shadow-indigo-600/30 flex items-center justify-center">
+                                <Play size={24} fill="white" className="ml-1" />
+                              </button>
+                              <div className="flex space-x-3 justify-center">
+                                {[0, 1, 2, 3].map(i => (
+                                  <div key={i} className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-indigo-600 scale-150 shadow-[0_0_20px_rgba(99,102,241,0.8)]' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
                                 ))}
                               </div>
-                              <p className="text-zinc-400 dark:text-zinc-600 text-xs font-medium italic text-center">Interactive visual tools built specifically for guitarists.</p>
-                            </div>
-                          )}
-                          {activeToolkit === 'Metronome' && (
-                            <div className="relative z-10 space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 flex flex-col items-center">
-                              <div className="text-center space-y-1">
-                                  <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Precision Metronome</h3>
-                                  <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Rock Solid Timekeeping</p>
+                              <div className="w-full max-w-sm space-y-3">
+                                <div className="flex justify-between text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                                  <span>40</span>
+                                  <span>Tempo</span>
+                                  <span>240</span>
+                                </div>
+                                <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg relative overflow-hidden">
+                                  <div className="absolute left-0 top-0 bottom-0 w-1/3 bg-indigo-600 rounded-lg" />
+                                </div>
                               </div>
-                              <div className="flex items-center space-x-8">
-                                  {[0, 1, 2, 3].map(t => (
-                                    <div key={t} className={`w-4 h-4 rounded-full transition-all duration-300 ${tick === t ? (t === 0 ? 'bg-indigo-500 scale-150 shadow-[0_0_20px_rgba(99,102,241,0.5)]' : 'bg-zinc-400 dark:bg-zinc-400') : 'bg-zinc-200 dark:bg-zinc-800 scale-75'}`} />
-                                  ))}
-                              </div>
-                              <div className="text-6xl font-black text-zinc-900 dark:text-white tracking-tighter">120 <span className="text-lg text-zinc-400 dark:text-zinc-600">BPM</span></div>
                             </div>
                           )}
                           {activeToolkit === 'Tuner' && (
-                            <div className="relative z-10 space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 flex flex-col items-center">
-                              <div className="text-center space-y-1">
-                                  <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Chromatic Tuner</h3>
-                                  <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Ultra-Low Latency Pitch Detection</p>
+                            <div className="relative z-10 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 flex flex-col items-center">
+                              <div className="text-center space-y-4">
+                                <span className="text-8xl md:text-9xl font-black text-emerald-500">E</span>
+                                <p className="text-xs font-black uppercase tracking-widest text-emerald-500">In Tune</p>
                               </div>
-                              <div className="relative w-full h-24 flex items-center justify-center">
-                                  <div className="absolute w-full h-0.5 bg-zinc-200 dark:bg-zinc-800" />
-                                  <div className="absolute w-0.5 h-12 bg-indigo-500 shadow-[0_0_20px_rgba(99,102,241,1)]" />
-                                  <div className="absolute w-4 h-4 bg-emerald-500 rounded-full blur-sm animate-pulse" />
+                              <div className="relative w-full max-w-md h-24 flex items-center justify-center">
+                                <div className="absolute w-full h-0.5 bg-zinc-200 dark:bg-zinc-800" />
+                                <div className="absolute w-0.5 h-12 bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,1)]" />
+                                <div className="absolute w-4 h-4 bg-emerald-500 rounded-full blur-sm animate-pulse" />
                               </div>
-                              <div className="text-7xl font-black text-emerald-500">E</div>
+                              <div className="text-center space-y-2">
+                                <p className="text-2xl font-black text-zinc-900 dark:text-white">440.0 Hz</p>
+                                <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">0 cents</p>
+                              </div>
+                              <button className="px-8 py-3 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/20 uppercase tracking-widest">
+                                Enable Microphone
+                              </button>
                             </div>
                           )}
                           {activeToolkit === 'Chord Map' && (
-                            <div className="relative z-10 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                              <div className="flex items-center justify-between">
-                                  <div className="space-y-1 text-left">
-                                    <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">Chord Library</h3>
-                                    <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest">5,000+ Shapes at your fingertips</p>
-                                  </div>
-                                  <span className="bg-indigo-600 text-white text-[10px] font-black px-4 py-2 rounded-xl uppercase">C MAJOR</span>
+                            <div className="relative z-10 space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                              <div className="text-center space-y-2">
+                                <h3 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">
+                                  C Major
+                                </h3>
+                                <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+                                  3 Variations Found
+                                </p>
                               </div>
-                              <div className="flex justify-center">
-                                  <div className="w-48 h-64 border-l-2 border-zinc-300 dark:border-zinc-700 relative flex justify-between px-2 py-4">
-                                    {[1, 2, 3, 4].map(f => (
-                                      <div key={f} className="absolute w-full h-px bg-zinc-200 dark:bg-zinc-800" style={{ top: `${f * 25}%` }} />
-                                    ))}
-                                    {[1, 2, 3, 4, 5, 6].map(s => (
-                                      <div key={s} className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
-                                          {s === 2 && <div className="absolute w-6 h-6 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-3 top-1/4 shadow-lg shadow-indigo-600/30" />}
-                                          {s === 4 && <div className="absolute w-6 h-6 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-3 top-1/2 shadow-lg shadow-indigo-600/30" />}
-                                      </div>
-                                    ))}
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {[1, 2, 3].map((pos) => (
+                                  <div key={pos} className="relative p-6 bg-zinc-50 dark:bg-zinc-900 rounded-[2rem] shadow-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center">
+                                    <span className="absolute top-4 right-4 text-[8px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+                                      Position {pos}
+                                    </span>
+                                    <div className="w-32 h-40 border-l-2 border-zinc-300 dark:border-zinc-700 relative flex justify-between px-1 py-2">
+                                      {[1, 2, 3, 4].map(f => (
+                                        <div key={f} className="absolute w-full h-px bg-zinc-200 dark:bg-zinc-800" style={{ top: `${f * 25}%` }} />
+                                      ))}
+                                      {[1, 2, 3, 4, 5, 6].map(s => (
+                                        <div key={s} className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                          {pos === 1 && s === 2 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 top-1/4 shadow-lg shadow-indigo-600/30" />}
+                                          {pos === 1 && s === 4 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 top-1/2 shadow-lg shadow-indigo-600/30" />}
+                                          {pos === 2 && s === 3 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 top-1/3 shadow-lg shadow-indigo-600/30" />}
+                                          {pos === 3 && s === 5 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 top-2/3 shadow-lg shadow-indigo-600/30" />}
+                                        </div>
+                                      ))}
+                                    </div>
                                   </div>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-2 justify-center pt-2">
+                                {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map((note, i) => (
+                                  <button key={note} className={`px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest ${i === 0 ? 'bg-indigo-600 text-white shadow-lg' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}`}>
+                                    {note}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {activeToolkit === 'Scales' && (
+                            <div className="relative z-10 space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-2xl font-black text-zinc-900 dark:text-white uppercase tracking-tighter">
+                                  A Minor Scale
+                                </h3>
+                                <div className="flex items-center space-x-3">
+                                  <div className="flex items-center space-x-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                                    <span className="text-[9px] font-black uppercase text-zinc-400 dark:text-zinc-500">Scale Note</span>
+                                  </div>
+                                  <div className="flex items-center space-x-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                                    <span className="text-[9px] font-black uppercase text-zinc-400 dark:text-zinc-500">Root</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="relative h-40 flex flex-col justify-between py-3 px-3 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden">
+                                {[1, 2, 3, 4, 5, 6].map(s => (
+                                  <div key={s} className="h-px w-full bg-zinc-200 dark:bg-zinc-700 relative">
+                                    {/* Fret markers */}
+                                    {[...Array(13)].map((_, f) => (
+                                      <div key={f} className="absolute top-[-12px] h-[24px] w-px bg-zinc-100 dark:bg-zinc-800" style={{ left: `${f * 7.69}%` }} />
+                                    ))}
+                                    {/* Scale notes */}
+                                    {s === 1 && <div className="absolute w-4 h-4 bg-emerald-500 border-2 border-emerald-400 rounded-full -translate-y-1/2 shadow-lg shadow-emerald-500/30" style={{ left: '0%' }} />}
+                                    {s === 2 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -translate-y-1/2 shadow-lg shadow-indigo-600/30" style={{ left: '15.38%' }} />}
+                                    {s === 3 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -translate-y-1/2 shadow-lg shadow-indigo-600/30" style={{ left: '30.76%' }} />}
+                                    {s === 4 && <div className="absolute w-4 h-4 bg-emerald-500 border-2 border-emerald-400 rounded-full -translate-y-1/2 shadow-lg shadow-emerald-500/30" style={{ left: '46.14%' }} />}
+                                    {s === 5 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -translate-y-1/2 shadow-lg shadow-indigo-600/30" style={{ left: '61.52%' }} />}
+                                    {s === 6 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -translate-y-1/2 shadow-lg shadow-indigo-600/30" style={{ left: '76.9%' }} />}
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="flex flex-wrap gap-2 justify-center pt-2">
+                                {['Major', 'Minor', 'Pentatonic', 'Blues'].map((scale, i) => (
+                                  <button key={scale} className={`px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest ${i === 1 ? 'bg-indigo-600 text-white shadow-lg' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'}`}>
+                                    {scale}
+                                  </button>
+                                ))}
                               </div>
                             </div>
                           )}

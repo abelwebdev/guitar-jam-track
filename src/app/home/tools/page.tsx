@@ -313,6 +313,13 @@ export default function ToolsPage() {
     }
   }, [isMetronomePlaying, metronomeBpm, metronomeTimeSignature, metronomeVolume, metronomeSoundType, playMetronomeClick]);
 
+  // Stop tuner when switching away from tuner tab
+  React.useEffect(() => {
+    if (activeToolTab !== 'tuner' && isTunerActive) {
+      stopTuner();
+    }
+  }, [activeToolTab, isTunerActive]);
+
   const isNoteInScale = (
     stringIndex: number,
     fret: number,

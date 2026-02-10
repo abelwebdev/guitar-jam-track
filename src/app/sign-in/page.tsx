@@ -305,7 +305,6 @@ export default function Page() {
             <h2 className="text-xl sm:text-2xl font-black text-white mb-2">
               {isLogin ? 'Welcome Back' : 'Join Guitar JamTrack'}
             </h2>
-            <p className="text-zinc-500 text-sm">Master your craft with the power of AI.</p>
           </div>
 
           <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-5 sm:p-6 shadow-2xl">
