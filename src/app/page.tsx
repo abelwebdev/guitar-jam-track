@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Zap, ChevronRight, X, Hash, Grid, Gauge, ListMusic, Heart, Users, Play, Pause, Volume2, VolumeX, Download, Loader2 } from 'lucide-react';
+import { usePathname } from "next/navigation";
+import { Zap, ChevronRight, X, Hash, Grid, Gauge, ListMusic, Heart, Menu, Play, Pause, Volume2, VolumeX, Download, Loader2 } from 'lucide-react';
 import { BackingTrack } from '../types/types';
 import { useGetHighlightedArtistsQuery, useGetArtistTracksQuery, useLazyDownloadTrackQuery } from "@/services/api";
 import { toast } from "sonner";
-import { Audiowide } from 'next/font/google'
+import { Audiowide, Inter } from 'next/font/google'
 const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
+const inter = Inter({ subsets: ['latin'], weight: ['400', '600', '700', '900'] })
 
 type LandingView = 'home' | 'tracks' | 'artists';
 
@@ -72,8 +74,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeToolkit, setActiveToolkit] = useState<'Metronome' | 'Tuner' | 'Chord Map' | 'Scales'>('Scales');
   const [tick, setTick] = useState(0);
-
-
+  const pathname = usePathname();  
   const [page, setPage] = useState(1);
   const [trackPage, setTrackPage] = useState(1);
   const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
@@ -297,60 +298,148 @@ export default function Header() {
           }}
           preload="metadata"
         />
+        <header>
+          <nav className="fixed top-0 left-0 right-0 z-[100] px-6 md:px-12 py-5 flex items-center justify-between backdrop-blur-xl bg-white/70 dark:bg-black/40 border-b border-zinc-200 dark:border-white/5 transition-all">
+            {/* Logo */}
+            <div className="flex items-center space-x-3 cursor-pointer">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center ">
+                <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+                  <Image
+                    src="/guitar-jam-track.png"
+                    alt="Guitar JamTrack Logo"
+                    width={32}
+                    height={32}
+                    priority
+                    className="h-8 w-8 brightness-0 dark:brightness-100 dark:invert"
+                  />
+                </Link>
+              </div>
+              <span className={`${audiowide.className} text-lg sm:text-xl font-black tracking-tighter uppercase text-zinc-900 dark:text-white`}>
+                Guitar JamTrack
+              </span>
+            </div>
 
-        {/* Mobile Menu Overlay */}
-        {isMobileMenuOpen && (
-          <div 
-            className="fixed inset-0 z-[99] bg-white dark:bg-black p-8 pt-32 flex flex-col space-y-8 md:hidden animate-in fade-in slide-in-from-top-4 duration-300"
-            onClick={(e) => {
-              // Close menu when clicking on the overlay background
-              if (e.target === e.currentTarget) {
-                setIsMobileMenuOpen(false);
-              }
-            }}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="absolute top-6 right-6 p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors animate-in fade-in duration-500 delay-100"
-              aria-label="Close menu"
-            >
-              <X size={24} />
-            </button>
-            
-            <Link 
-              href="/tracks"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`text-2xl font-black uppercase tracking-tighter text-left transition-all hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-150 relative group px-4 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:shadow-lg hover:shadow-indigo-500/10 ${
-                activeView === "tracks" 
-                  ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30" 
-                  : "text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400"
-              }`}
-            >
-              <span className="relative z-10">Tracks</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
-            </Link>
-            <Link 
-              href="/artists"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-200 relative group px-4 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:shadow-lg hover:shadow-indigo-500/10 ${
-                activeView === "artists" 
-                  ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30" 
-                  : "text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400"
-              }`}
-            >
-              <span className="relative z-10">Artists</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
-            </Link>
-            <Link
-              href="/sign-in"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="bg-indigo-600 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 hover:scale-105 transition-all duration-200 text-center animate-in slide-in-from-bottom-4 fade-in duration-400 delay-300 shadow-lg hover:shadow-xl"
-            >
-              Get Started
-            </Link>
-          </div>
-        )}
+            {/* Desktop menu */}
+            <div className="hidden md:flex items-center space-x-10">
+              <div className="flex items-center space-x-8">
+                <Link
+                  href="/tracks"
+                  className={`relative font-medium text-[15px] transition-colors duration-200 ${
+                    pathname === '/tracks'
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-zinc-900 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-400 after:content-[""] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-indigo-500 dark:after:bg-indigo-400 hover:after:w-full after:transition-all after:duration-300'
+                  }`}
+                >
+                  Tracks
+                </Link>
+
+                <Link
+                  href="/artists"
+                  className={`relative font-medium text-[15px] transition-colors duration-200 ${
+                    pathname === '/artists'
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 after:content-[""] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-indigo-500 dark:after:bg-indigo-400 hover:after:w-full after:transition-all after:duration-300'
+                  }`}
+                >
+                  Artists
+                </Link>
+              </div>
+
+              <div className="flex items-center space-x-4 border-l border-zinc-200 dark:border-zinc-800 pl-10">
+                {/* Get started (primary button) */}
+                <Link
+                  href="/sign-in"
+                  className="bg-indigo-600 dark:bg-indigo-600 text-white px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:bg-indigo-500 dark:hover:bg-indigo-500 transition-colors"
+                >
+                  Get Started
+                </Link>
+              </div>
+            </div>
+
+            {/* Mobile menu */}
+            <div className="md:hidden flex items-center space-x-3">
+              {/* Menu toggle */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsMobileMenuOpen(!isMobileMenuOpen);
+                }}
+                className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 transition-all duration-200 relative z-50 touch-manipulation hover:scale-110 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg hover:shadow-zinc-200/50 dark:hover:shadow-zinc-800/50 active:scale-95 group"
+                aria-label="Toggle menu"
+              >
+                <div className="transition-all duration-300 group-hover:scale-110">
+                  {isMobileMenuOpen ? (
+                    <X size={20} className="animate-in spin-in-90 duration-200 text-red-500 group-hover:text-red-400 group-hover:rotate-90" />
+                  ) : (
+                    <Menu size={20} className="animate-in fade-in duration-200 text-indigo-500 group-hover:text-indigo-400" />
+                  )}
+                </div>
+              </button>
+            </div>
+          </nav>
+          {/* Mobile Menu Overlay */}
+          {isMobileMenuOpen && (
+            <div className="fixed inset-0 z-[99] bg-white dark:bg-black p-8 pt-32 flex flex-col space-y-8 md:hidden animate-in fade-in slide-in-from-top-4 duration-300">
+              {/* Close button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="absolute top-6 right-6 p-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white transition-colors animate-in fade-in duration-500 delay-100"
+                aria-label="Close menu"
+              >
+                <X size={24} />
+              </button>
+              
+              <Link 
+                href="/tracks"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-150 relative group px-4 py-2 rounded-xl hover:shadow-lg hover:shadow-indigo-500/10 ${
+                  pathname === '/tracks'
+                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
+                    : 'text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+                }`}
+              >
+                <span className="relative z-10">Tracks</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+              </Link>
+              
+              <Link 
+                href="/artists"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-200 relative group px-4 py-2 rounded-xl hover:shadow-lg hover:shadow-indigo-500/10 ${
+                  pathname === '/artists'
+                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
+                    : 'text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+                }`}
+              >
+                <span className="relative z-10">Artists</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+              </Link>
+              
+              <Link 
+                href="/sign-in"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-250 relative group px-4 py-2 rounded-xl hover:shadow-lg hover:shadow-indigo-500/10 ${
+                  pathname === '/sign-in'
+                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
+                    : 'text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+                }`}
+              >
+                <span className="relative z-10">Sign In</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+              </Link>
+              
+              <Link
+                href="/sign-in"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="bg-indigo-600 text-white px-8 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 hover:scale-105 transition-all duration-200 text-center animate-in slide-in-from-bottom-4 fade-in duration-400 delay-300 shadow-lg hover:shadow-xl"
+              >
+                Get Started
+              </Link>
+            </div>
+          )}
+        </header>
 
         {/* View Rendering */}
         <main className="transition-all duration-300">
@@ -374,18 +463,18 @@ export default function Header() {
                 {/* Content */}
                 <div className="relative z-10 max-w-6xl mx-auto flex flex-col items-center justify-center">
 
-                  <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black tracking-tight mb-6 leading-snug text-white animate-in fade-in slide-in-from-bottom-4 duration-700">
-                   Jam, Learn, and Master Guitar with Backing Tracks 
+                  <h1 className={`${inter.className} text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black tracking-tighter mb-8 leading-[1.1] text-white animate-in fade-in slide-in-from-bottom-4 duration-700`}>
+                   Jam and Master Guitar with Backing Tracks 
                   </h1>
 
-                  <p className="text-zinc-200 dark:text-zinc-300 text-base md:text-xl max-w-2xl mb-10 font-medium leading-relaxed px-4 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-                    Search thousands of professional backing tracks and practice smarter with our intelligent guitar learning platform.
+                  <p className={`${inter.className} text-zinc-100 dark:text-zinc-200 text-lg md:text-2xl max-w-3xl mb-12 font-semibold leading-relaxed px-4 animate-in fade-in slide-in-from-bottom-4 duration-1000`}>
+                    Search thousands of professional backing tracks and elevate your guitar practice sessions.
                   </p>
 
                   <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-5 animate-in fade-in slide-in-from-bottom-4 duration-1000">
                     <Link
                       href="/sign-in"
-                      className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-10 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-2xl shadow-indigo-600/50 dark:shadow-indigo-500/50 flex items-center justify-center space-x-3 group"
+                      className="w-full sm:w-autobg-indigo-600 dark:bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-10 py-5 rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-2xl shadow-indigo-600/50 dark:shadow-indigo-500/50 flex items-center justify-center space-x-3 group"
                     >
                       <span>Get Started</span>
                       <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

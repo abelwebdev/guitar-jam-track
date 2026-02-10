@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ClientProviders } from "./ClientProviders";
 import { Toaster } from "sonner"
-import ClientLayout from "./ClientLayout";
 
 export const metadata: Metadata = {
   title: "Guitar JamTrack - Professional Backing Tracks for Guitar Practice",
-  description: "Search thousands of professional guitar backing tracks and practice smarter with our intelligent guitar learning platform. Browse by genre, key, and BPM.",
+  description: "Search thousands of professional guitar backing tracks and practice smarter with our intelligent platform.",
   keywords: "guitar backing tracks, guitar practice, backing tracks, guitar learning, music practice, guitar jam tracks",
   authors: [{ name: "Guitar JamTrack" }],
   creator: "Guitar JamTrack",
@@ -64,9 +63,7 @@ export default function RootLayout({
           richColors
         />
         <ClientProviders>
-          <ClientLayout>
-            {children}
-          </ClientLayout>
+          {children}
         </ClientProviders>
       </body>
     </html>

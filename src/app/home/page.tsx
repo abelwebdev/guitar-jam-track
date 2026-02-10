@@ -103,7 +103,7 @@ export default function Home() {
   const fetchedIdsRef = useRef<Set<number>>(new Set());
   const [artistPage, setArtistPage] = useState(1);
   const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
-  const artistsPerPage = 4;
+  const artistsPerPage = 8;
 
   // Fetch artist tracks when an artist is selected
   const { data: artistTracks = [], isLoading: isArtistTracksLoading } = useGetArtistTracksQuery(
