@@ -139,7 +139,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     checkOverflow();
     window.addEventListener('resize', checkOverflow);
     return () => window.removeEventListener('resize', checkOverflow);
-  }, [playerState.currentTrack?.title]);
+  }, [playerState.currentTrack?.track_title, playerState.currentTrack?.title]);
 
   const handleClose = useCallback(() => {
     setPlayerState(prev => ({ 
@@ -329,7 +329,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
                   ref={titleRef}
                   className={`font-black text-zinc-900 dark:text-white leading-tight transition-all whitespace-nowrap inline-block ${isMobileExpanded ? 'text-lg' : 'text-xs lg:text-sm'} ${isTitleOverflowing ? 'animate-slide-title' : ''}`}
                 >
-                  {playerState.currentTrack?.title}
+                  {playerState.currentTrack?.track_title || playerState.currentTrack?.title || 'Unknown Track'}
                 </h4>
               </div>
               <p className={`text-zinc-500 font-bold truncate uppercase tracking-wider transition-all ${isMobileExpanded ? 'text-xs' : 'text-[9px] lg:text-[11px]'}`}>
