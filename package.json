@@ -1,6 +1,13 @@
 {
   "name": "guitar-jam-track",
   "version": "1.0.0",
+  "private": true,
+  "author": "abelwebdev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abelwebdev/guitar-jam-track"
+  },
+  "license": "MIT",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
