@@ -50,8 +50,8 @@ export default function Page() {
         const user = userCredential.user;
         
         if (!user.emailVerified) {
-          toast.error("Email verification required", {
-            description: "Please verify your email before signing in. Check your inbox or spam folder."
+          toast.error("Verify your email first", {
+            description: "Check your inbox for the verification link."
           });
           await auth.signOut();
           return;
@@ -63,24 +63,20 @@ export default function Page() {
           await updateProfile(user, { displayName: username });
         }
         
-        toast.success("Welcome back!", {
-          description: "You've been signed in successfully."
-        });
+        toast.success("Welcome back!");
         const idToken = await getIdToken(user, true);
         await sessionLogin({ idToken, username }).unwrap();
         router.push("/home");
       } else {
         if (!formData.name.trim()) {
-          toast.error("Name required", {
-            description: "Please enter your full name to create an account."
-          });
+          toast.error("Name required");
           return;
         }
 
         const signInMethods = await fetchSignInMethodsForEmail(auth, formData.email);
         if (signInMethods.length > 0) {
-          toast.error("Account exists", {
-            description: "An account with this email already exists. Please sign in instead."
+          toast.error("Email already registered", {
+            description: "Try signing in instead."
           });
           setIsLogin(true);
           return;
@@ -96,8 +92,8 @@ export default function Page() {
         await sendEmailVerification(user);
         await auth.signOut();
         
-        toast.success("Account created!", {
-          description: "Please check your email and click the verification link before signing in."
+        toast.success("Check your email", {
+          description: "Click the verification link to activate your account."
         });
         
         setIsLogin(true);
@@ -106,51 +102,45 @@ export default function Page() {
     } catch (error: any) {
       switch (error.code) {
         case "auth/user-not-found":
-          toast.error("Account not found", {
-            description: "No account exists for this email. Please create an account first."
+          toast.error("No account found", {
+            description: "Create an account to get started."
           });
           setIsLogin(false);
           break;
         case "auth/wrong-password":
-          toast.error("Incorrect password", {
-            description: "The password you entered is incorrect. Please try again."
-          });
+          toast.error("Wrong password");
           break;
         case "auth/invalid-email":
-          toast.error("Invalid email", {
-            description: "Please enter a valid email address."
-          });
+          toast.error("Invalid email address");
           break;
         case "auth/email-already-in-use":
-          toast.error("Email already in use", {
-            description: "An account with this email already exists. Please sign in instead."
+          toast.error("Email already registered", {
+            description: "Try signing in instead."
           });
           setIsLogin(true);
           break;
         case "auth/weak-password":
-          toast.error("Weak password", {
-            description: "Password should be at least 6 characters long."
+          toast.error("Password too weak", {
+            description: "Use at least 6 characters."
           });
           break;
         case "auth/operation-not-allowed":
-          toast.error("Sign up disabled", {
-            description: "Email/password accounts are not enabled. Please contact support."
+          toast.error("Sign up unavailable", {
+            description: "Contact support for help."
           });
           break;
         case "auth/too-many-requests":
           toast.error("Too many attempts", {
-            description: "Account temporarily locked due to too many failed attempts. Try again later."
+            description: "Try again in a few minutes."
           });
           break;
         case "auth/user-disabled":
           toast.error("Account disabled", {
-            description: "This account has been disabled. Please contact support."
+            description: "Contact support for help."
           });
           break;
         default:
-          toast.error(isLogin ? "Sign in failed" : "Sign up failed", {
-            description: error.message || "An unexpected error occurred. Please try again."
-          });
+          toast.error(isLogin ? "Sign in failed" : "Sign up failed");
       }
     } finally {
       setLoading(false);
@@ -164,25 +154,19 @@ export default function Page() {
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
       const user = userCredential.user;
-      toast.success("Welcome!", {
-        description: "Successfully signed in with Google."
-      });
+      toast.success("Welcome!");
       const idToken = await getIdToken(user, true);
       await sessionLogin({ idToken }).unwrap();
       router.push("/home");
     } catch (error: any) {
       if (error.code === "auth/popup-closed-by-user") {
-        toast.info("Sign in cancelled", {
-          description: "Google sign in was cancelled."
-        });
+        toast.info("Sign in cancelled");
       } else if (error.code === "auth/popup-blocked") {
         toast.error("Popup blocked", {
-          description: "Please allow popups for this site and try again."
+          description: "Allow popups and try again."
         });
       } else {
-        toast.error("Google sign in failed", {
-          description: error.message || "An error occurred during Google sign in."
-        });
+        toast.error("Google sign in failed");
       }
     } finally {
       setLoading(false);
@@ -193,39 +177,31 @@ export default function Page() {
     if (checkingAuth || loading) return;
     
     if (!formData.email) {
-      toast.info("Email required", {
-        description: "Please enter your email address to reset your password."
-      });
+      toast.info("Enter your email first");
       return;
     }
     
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, formData.email);
-      toast.success("Reset email sent!", {
-        description: "Check your inbox or spam folder for password reset instructions."
+      toast.success("Reset link sent", {
+        description: "Check your inbox for instructions."
       });
     } catch (error: any) {
       switch (error.code) {
         case "auth/user-not-found":
-          toast.error("Account not found", {
-            description: "No account exists with this email address."
-          });
+          toast.error("No account found");
           break;
         case "auth/invalid-email":
-          toast.error("Invalid email", {
-            description: "Please enter a valid email address."
-          });
+          toast.error("Invalid email address");
           break;
         case "auth/too-many-requests":
           toast.error("Too many requests", {
-            description: "Please wait before requesting another password reset."
+            description: "Wait a few minutes and try again."
           });
           break;
         default:
-          toast.error("Reset failed", {
-            description: error.message || "Failed to send password reset email."
-          });
+          toast.error("Reset failed");
       }
     } finally {
       setLoading(false);

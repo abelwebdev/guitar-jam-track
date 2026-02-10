@@ -60,6 +60,7 @@ export default function RootLayout({
       <body>
         <Toaster
           position="top-center"
+          theme="dark"
           richColors
         />
         <ClientProviders>

@@ -147,6 +147,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen">
       <Toaster
         position="top-center"
+        theme="dark"
         richColors
       />
       <div className="flex flex-col h-screen transition-colors duration-300 bg-white dark:bg-[#09090b] overflow-hidden font-sans text-zinc-900 dark:text-zinc-100 relative">
