@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useGetHighlightedArtistsQuery, useGetAllTracksQuery, useGetFavoritesQuery, useGetPlaylistQuery, useGetAllArtistsQuery, useGetArtistTracksQuery } from '@/services/api';
 import { useRouter } from 'next/navigation';
 import { BackingTrack } from '@/types/types';
+import { usePlayer } from '@/contexts/PlayerContext';
 
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; trend?: string; onClick?: () => void }> = ({ icon, label, value, trend, onClick }) => (
   <div 
@@ -55,6 +56,10 @@ const ArtistCard: React.FC<{ artist: { id: number; name: string | null; backing_
 );
 
 const TrackRow: React.FC<{ track: BackingTrack }> = ({ track }) => {
+  const { playerState, setPlayerState } = usePlayer();
+  const isCurrentTrack = playerState.currentTrack?.id === track.id;
+  const isPlaying = isCurrentTrack && playerState.isPlaying;
+
   const getArtistName = (artist: BackingTrack['artist']): string => {
     if (artist && typeof artist === 'object') {
       return artist.artist_name || artist.name || 'Unknown Artist';
@@ -62,8 +67,27 @@ const TrackRow: React.FC<{ track: BackingTrack }> = ({ track }) => {
     return typeof artist === 'string' ? artist : 'Unknown Artist';
   };
 
+  const handlePlay = () => {
+    if (isCurrentTrack) {
+      setPlayerState({ ...playerState, isPlaying: !playerState.isPlaying });
+    } else {
+      setPlayerState({
+        ...playerState,
+        currentTrack: track,
+        isPlaying: true,
+      });
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-all cursor-pointer group">
+    <div 
+      onClick={handlePlay}
+      className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group ${
+        isCurrentTrack 
+          ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800' 
+          : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/40'
+      }`}
+    >
       <div className="flex items-center space-x-3 flex-1 min-w-0">
         <div className="w-10 h-10 rounded-lg overflow-hidden relative shrink-0">
           <Image 
@@ -73,17 +97,33 @@ const TrackRow: React.FC<{ track: BackingTrack }> = ({ track }) => {
             height={40}
             className="w-full h-full object-cover" 
           />
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Play size={14} fill="white" className="text-white ml-0.5" />
+          <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
+            isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}>
+            {isPlaying ? (
+              <Pause size={14} fill="white" className="text-white" />
+            ) : (
+              <Play size={14} fill="white" className="text-white ml-0.5" />
+            )}
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <h5 className="text-sm font-bold truncate text-zinc-900 dark:text-white">
+          <h5 className={`text-sm font-bold truncate ${
+            isCurrentTrack ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'
+          }`}>
             {track.track_title || track.title || 'Unknown Track'}
           </h5>
           <p className="text-xs text-zinc-500 truncate">{getArtistName(track.artist)}</p>
         </div>
       </div>
+      {isPlaying && (
+        <div className="flex items-center space-x-1">
+          <div className="w-1 h-3 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0ms', animationDuration: '800ms' }}></div>
+          <div className="w-1 h-4 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '200ms', animationDuration: '800ms' }}></div>
+          <div className="w-1 h-2 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '400ms', animationDuration: '800ms' }}></div>
+          <div className="w-1 h-5 bg-indigo-600 dark:bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '600ms', animationDuration: '800ms' }}></div>
+        </div>
+      )}
     </div>
   );
 };
