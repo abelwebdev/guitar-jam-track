@@ -374,20 +374,7 @@ export default function TracksPage() {
             <span className="relative z-10">Artists</span>
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
           </Link>
-          
-          <Link 
-            href="/sign-in"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={`text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-250 relative group px-4 py-2 rounded-xl hover:shadow-lg hover:shadow-indigo-500/10 ${
-              pathname === '/sign-in'
-                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
-                : 'text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-900'
-            }`}
-          >
-            <span className="relative z-10">Sign In</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
-          </Link>
-          
+
           <Link
             href="/sign-in"
             onClick={() => setIsMobileMenuOpen(false)}
