@@ -58,9 +58,10 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body>
         <Toaster
-          position="top-center"
+          position="bottom-center"
           theme="dark"
           richColors
+          offset="140px"
         />
         <ClientProviders>
           {children}

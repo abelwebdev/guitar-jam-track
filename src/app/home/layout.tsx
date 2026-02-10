@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import Image from "next/image";
 import { useRouter, usePathname } from 'next/navigation';
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { useGetUserQuery, useDeleteUserMutation, useSessionLogoutMutation } from "@/services/api";
 import { auth } from "@/lib/firebaseClient";
 import { onAuthStateChanged, getIdToken, sendPasswordResetEmail } from "firebase/auth";
@@ -145,11 +145,6 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <Toaster
-        position="top-center"
-        theme="dark"
-        richColors
-      />
       <div className="flex flex-col h-screen transition-colors duration-300 bg-white dark:bg-[#09090b] overflow-hidden font-sans text-zinc-900 dark:text-zinc-100 relative">
       
       {isSidebarOpen && (

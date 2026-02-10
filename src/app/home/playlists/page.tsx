@@ -16,6 +16,7 @@ import {
   useUpdatePlaylistMutation
 } from '@/services/api';
 import { usePlayer } from '@/contexts/PlayerContext';
+import { toast } from 'sonner';
 
 // Playlist type from API
 type ApiPlaylist = {
@@ -311,13 +312,26 @@ export default function PlaylistsPage() {
 
   const currentPlaylist = playlists.find(p => p.id === selectedPlaylistId);
 
+  // Refetch playlists and tracks on page mount/navigation
+  React.useEffect(() => {
+    refetchPlaylists();
+  }, [refetchPlaylists]);
+
+  // Refetch tracks when playlist is selected
+  React.useEffect(() => {
+    if (selectedPlaylistId) {
+      refetchTracks();
+    }
+  }, [selectedPlaylistId, refetchTracks]);
+
   const handleCreatePlaylist = async (name: string) => {
     try {
       await createPlaylist({ name }).unwrap();
       refetchPlaylists();
+      toast.success('Playlist created');
     } catch (error) {
       console.error('Failed to create playlist:', error);
-      // You could add a toast notification here
+      toast.error('Failed to create playlist');
     }
   };
 
@@ -334,27 +348,39 @@ export default function PlaylistsPage() {
         id: editingPlaylist.id, 
         name 
       }).unwrap();
-      refetchPlaylists();
+      await refetchPlaylists();
+      // If we're viewing the edited playlist, refetch its tracks too
+      if (selectedPlaylistId === editingPlaylist.id) {
+        await refetchTracks();
+      }
       setEditingPlaylist(null);
+      toast.success('Playlist updated');
     } catch (error) {
       console.error('Failed to update playlist:', error);
-      // You could add a toast notification here
+      toast.error('Failed to update playlist');
     }
   };
 
   const handleDeletePlaylist = async (playlistId: number) => {
-    if (!confirm('Are you sure you want to delete this playlist?')) return;
-    
-    try {
-      await deletePlaylist(playlistId).unwrap();
-      if (selectedPlaylistId === playlistId) {
-        setSelectedPlaylistId(null);
-      }
-      refetchPlaylists();
-    } catch (error) {
-      console.error('Failed to delete playlist:', error);
-      // You could add a toast notification here
-    }
+    toast.error('Delete this playlist?', {
+      duration: 10000,
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          try {
+            await deletePlaylist(playlistId).unwrap();
+            if (selectedPlaylistId === playlistId) {
+              setSelectedPlaylistId(null);
+            }
+            refetchPlaylists();
+            toast.success('Playlist deleted');
+          } catch (error) {
+            console.error('Failed to delete playlist:', error);
+            toast.error('Failed to delete playlist');
+          }
+        }
+      },
+    });
   };
 
   const handlePlayTrackInPlaylist = (track: BackingTrack) => {
@@ -369,19 +395,27 @@ export default function PlaylistsPage() {
 
   const handleRemoveTrack = async (trackId: number) => {
     if (!selectedPlaylistId) return;
-    if (!confirm('Remove this track from the playlist?')) return;
     
-    try {
-      await removeTracksFromPlaylist({
-        playlistId: selectedPlaylistId,
-        trackIds: [trackId]
-      }).unwrap();
-      refetchTracks();
-      refetchPlaylists(); // Update track count
-    } catch (error) {
-      console.error('Failed to remove track:', error);
-      // You could add a toast notification here
-    }
+    toast.error('Remove track from playlist?', {
+      duration: 10000,
+      action: {
+        label: 'Remove',
+        onClick: async () => {
+          try {
+            await removeTracksFromPlaylist({
+              playlistId: selectedPlaylistId,
+              trackIds: [trackId]
+            }).unwrap();
+            refetchTracks();
+            refetchPlaylists(); // Update track count
+            toast.success('Track removed');
+          } catch (error) {
+            console.error('Failed to remove track:', error);
+            toast.error('Failed to remove track');
+          }
+        }
+      },
+    });
   };
 
   if (playlistsLoading) {
