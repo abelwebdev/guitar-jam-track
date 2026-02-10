@@ -565,26 +565,113 @@ export default function Header() {
                                 </p>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                {[1, 2, 3].map((pos) => (
-                                  <div key={pos} className="relative p-6 bg-zinc-50 dark:bg-zinc-900 rounded-[2rem] shadow-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center">
-                                    <span className="absolute top-4 right-4 text-[8px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
-                                      Position {pos}
-                                    </span>
-                                    <div className="w-32 h-40 border-l-2 border-zinc-300 dark:border-zinc-700 relative flex justify-between px-1 py-2">
-                                      {[1, 2, 3, 4].map(f => (
-                                        <div key={f} className="absolute w-full h-px bg-zinc-200 dark:bg-zinc-800" style={{ top: `${f * 25}%` }} />
-                                      ))}
-                                      {[1, 2, 3, 4, 5, 6].map(s => (
-                                        <div key={s} className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
-                                          {pos === 1 && s === 2 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 top-1/4 shadow-lg shadow-indigo-600/30" />}
-                                          {pos === 1 && s === 4 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 top-1/2 shadow-lg shadow-indigo-600/30" />}
-                                          {pos === 2 && s === 3 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 top-1/3 shadow-lg shadow-indigo-600/30" />}
-                                          {pos === 3 && s === 5 && <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 top-2/3 shadow-lg shadow-indigo-600/30" />}
-                                        </div>
-                                      ))}
+                                {/* Position 1: Open C Major */}
+                                <div className="relative p-6 bg-zinc-50 dark:bg-zinc-900 rounded-[2rem] shadow-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center">
+                                  <span className="absolute top-4 right-4 text-[8px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+                                    Open
+                                  </span>
+                                  <div className="w-32 h-40 border-l-2 border-zinc-300 dark:border-zinc-700 relative flex justify-between px-1 py-2">
+                                    {[1, 2, 3, 4].map(f => (
+                                      <div key={f} className="absolute w-full h-px bg-zinc-200 dark:bg-zinc-800" style={{ top: `${f * 20}%` }} />
+                                    ))}
+                                    {/* String 6 (E) - X */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <span className="absolute -top-5 -left-1 text-[10px] font-black text-red-500">×</span>
+                                    </div>
+                                    {/* String 5 (A) - 3rd fret */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '60%' }} />
+                                    </div>
+                                    {/* String 4 (D) - 2nd fret */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '40%' }} />
+                                    </div>
+                                    {/* String 3 (G) - Open */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <span className="absolute -top-5 -left-1.5 text-[10px] font-black text-emerald-500">○</span>
+                                    </div>
+                                    {/* String 2 (B) - 1st fret */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '20%' }} />
+                                    </div>
+                                    {/* String 1 (E) - Open */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <span className="absolute -top-5 -left-1.5 text-[10px] font-black text-emerald-500">○</span>
                                     </div>
                                   </div>
-                                ))}
+                                </div>
+
+                                {/* Position 2: Barre at 3rd fret */}
+                                <div className="relative p-6 bg-zinc-50 dark:bg-zinc-900 rounded-[2rem] shadow-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center">
+                                  <span className="absolute top-4 right-4 text-[8px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+                                    Fret 3
+                                  </span>
+                                  <div className="w-32 h-40 border-l-2 border-zinc-300 dark:border-zinc-700 relative flex justify-between px-1 py-2">
+                                    {[1, 2, 3, 4].map(f => (
+                                      <div key={f} className="absolute w-full h-px bg-zinc-200 dark:bg-zinc-800" style={{ top: `${f * 20}%` }} />
+                                    ))}
+                                    {/* String 6 (E) - 3rd fret (barre) */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '0%' }} />
+                                    </div>
+                                    {/* String 5 (A) - 3rd fret (barre) */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '0%' }} />
+                                    </div>
+                                    {/* String 4 (D) - 5th fret */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '40%' }} />
+                                    </div>
+                                    {/* String 3 (G) - 5th fret */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '40%' }} />
+                                    </div>
+                                    {/* String 2 (B) - 5th fret */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '40%' }} />
+                                    </div>
+                                    {/* String 1 (E) - 3rd fret (barre) */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '0%' }} />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Position 3: Barre at 8th fret */}
+                                <div className="relative p-6 bg-zinc-50 dark:bg-zinc-900 rounded-[2rem] shadow-md border border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center">
+                                  <span className="absolute top-4 right-4 text-[8px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+                                    Fret 8
+                                  </span>
+                                  <div className="w-32 h-40 border-l-2 border-zinc-300 dark:border-zinc-700 relative flex justify-between px-1 py-2">
+                                    {[1, 2, 3, 4].map(f => (
+                                      <div key={f} className="absolute w-full h-px bg-zinc-200 dark:bg-zinc-800" style={{ top: `${f * 20}%` }} />
+                                    ))}
+                                    {/* String 6 (E) - 8th fret (barre) */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '0%' }} />
+                                    </div>
+                                    {/* String 5 (A) - 10th fret */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '40%' }} />
+                                    </div>
+                                    {/* String 4 (D) - 10th fret */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '40%' }} />
+                                    </div>
+                                    {/* String 3 (G) - 9th fret */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '20%' }} />
+                                    </div>
+                                    {/* String 2 (B) - 8th fret (barre) */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '0%' }} />
+                                    </div>
+                                    {/* String 1 (E) - 8th fret (barre) */}
+                                    <div className="h-full w-px bg-zinc-200 dark:bg-zinc-600 relative">
+                                      <div className="absolute w-4 h-4 bg-indigo-600 border-2 border-indigo-400 rounded-full -left-2 shadow-lg shadow-indigo-600/30" style={{ top: '0%' }} />
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                               <div className="flex flex-wrap gap-2 justify-center pt-2">
                                 {['C', 'D', 'E', 'F', 'G', 'A', 'B'].map((note, i) => (
