@@ -13,8 +13,12 @@ const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
 type LandingView = 'home' | 'tracks' | 'artists';
 
 const FeatureCard: React.FC<{ icon: React.ReactNode, title: string, desc: string, color?: string }> = ({ icon, title, desc, color = "indigo" }) => (
-  <div className="p-6 md:p-8 rounded-[2rem] bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 transition-all group relative overflow-hidden text-left shadow-sm">
-    <div className={`absolute top-0 right-0 w-32 h-32 bg-${color}-500/5 blur-[50px] rounded-full -mr-16 -mt-16`} />
+  <div className={`p-6 md:p-8 rounded-[2rem] bg-zinc-100 dark:bg-zinc-900/40 border-2 transition-all group relative overflow-hidden text-left shadow-sm hover:shadow-xl hover:scale-105 duration-300 ${
+    color === "indigo" ? "border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 dark:hover:border-indigo-500/50" :
+    color === "purple" ? "border-zinc-200 dark:border-zinc-800 hover:border-purple-500/50 dark:hover:border-purple-500/50" :
+    "border-zinc-200 dark:border-zinc-800 hover:border-emerald-500/50 dark:hover:border-emerald-500/50"
+  }`}>
+    <div className={`absolute top-0 right-0 w-32 h-32 bg-${color}-500/5 blur-[50px] rounded-full -mr-16 -mt-16 group-hover:bg-${color}-500/10 transition-all duration-300`} />
     <div className={`w-12 h-12 rounded-2xl bg-${color}-600/10 flex items-center justify-center text-${color}-500 mb-6 group-hover:scale-110 transition-transform relative z-10`}>
       {icon}
     </div>
@@ -455,7 +459,6 @@ export default function Header() {
                               </div>
                               <div className="text-center space-y-2">
                                 <p className="text-2xl font-black text-zinc-900 dark:text-white">440.0 Hz</p>
-                                <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">0 cents</p>
                               </div>
                               <button className="px-8 py-3 rounded-2xl bg-indigo-600 text-white font-black text-sm shadow-xl shadow-indigo-600/20 uppercase tracking-widest">
                                 Enable Microphone
@@ -573,13 +576,13 @@ export default function Header() {
                     <FeatureCard 
                       icon={<Zap size={24} />}
                       title="Advanced Controls"
-                      desc="Loop specific phrases, drop the tempo to 50% without artifacting, and adjust volume mix on the fly."
+                      desc="Set custom loop points, adjust playback speed from 0.5x to 2x, and download tracks for offline practice."
                     />
                     <FeatureCard 
                       icon={<ListMusic size={24} />}
                       title="Session Playlists"
                       color="purple"
-                      desc="Organize your tracks into practice routines. Group by genre, key, or your specific training goals."
+                      desc="Organize your tracks into custom practice routines and build your perfect practice sessions."
                     />
                     <FeatureCard 
                       icon={<Heart size={24} />}
@@ -598,11 +601,7 @@ export default function Header() {
                     <>
                       <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 space-y-6 md:space-y-0">
                         <div className="text-left">
-                          <div className="inline-flex items-center space-x-2 text-indigo-600 dark:text-indigo-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">
-                            <Users size={16} />
-                            <span>The Riff Collective</span>
-                          </div>
-                          <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">Highlighted Artists</h2>
+                          <h2 className="text-4xl md:text-5xl font-black text-zinc-900 dark:text-white tracking-tighter">Featured Artists</h2>
                         </div>
                         <Link href="/sign-in" className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-black uppercase text-xs tracking-widest hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
                           <span>View All</span>

@@ -49,20 +49,22 @@ export default function ClientLayout({
               <div className="flex items-center space-x-8">
                 <Link
                   href="/tracks"
-                  className="relative text-zinc-900 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-400 font-medium text-[15px]
-                  transition-colors duration-200 after:content-[''] after:absolute after:left-0 
-                  after:-bottom-1 after:w-0 after:h-[2px] after:bg-indigo-500 dark:after:bg-indigo-400
-                  hover:after:w-full after:transition-all after:duration-300"
+                  className={`relative font-medium text-[15px] transition-colors duration-200 ${
+                    pathname === '/tracks'
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-zinc-900 dark:text-white hover:text-indigo-500 dark:hover:text-indigo-400 after:content-[""] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-indigo-500 dark:after:bg-indigo-400 hover:after:w-full after:transition-all after:duration-300'
+                  }`}
                 >
                   Tracks
                 </Link>
 
                 <Link
                   href="/artists"
-                  className="relative text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 font-medium text-[15px]
-                  transition-colors duration-200 after:content-[''] after:absolute after:left-0 
-                  after:-bottom-1 after:w-0 after:h-[2px] after:bg-indigo-500 dark:after:bg-indigo-400
-                  hover:after:w-full after:transition-all after:duration-300"
+                  className={`relative font-medium text-[15px] transition-colors duration-200 ${
+                    pathname === '/artists'
+                      ? 'text-indigo-600 dark:text-indigo-400'
+                      : 'text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 after:content-[""] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-0 after:bg-indigo-500 dark:after:bg-indigo-400 hover:after:w-full after:transition-all after:duration-300'
+                  }`}
                 >
                   Artists
                 </Link>
@@ -118,7 +120,11 @@ export default function ClientLayout({
               <Link 
                 href="/tracks"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-150 text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 relative group px-4 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:shadow-lg hover:shadow-indigo-500/10"
+                className={`text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-150 relative group px-4 py-2 rounded-xl hover:shadow-lg hover:shadow-indigo-500/10 ${
+                  pathname === '/tracks'
+                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
+                    : 'text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+                }`}
               >
                 <span className="relative z-10">Tracks</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
@@ -127,7 +133,11 @@ export default function ClientLayout({
               <Link 
                 href="/artists"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-200 text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 relative group px-4 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:shadow-lg hover:shadow-indigo-500/10"
+                className={`text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-200 relative group px-4 py-2 rounded-xl hover:shadow-lg hover:shadow-indigo-500/10 ${
+                  pathname === '/artists'
+                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
+                    : 'text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+                }`}
               >
                 <span className="relative z-10">Artists</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
@@ -136,7 +146,11 @@ export default function ClientLayout({
               <Link 
                 href="/sign-in"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="text-2xl font-black uppercase tracking-tighter text-left text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-250 relative group px-4 py-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:shadow-lg hover:shadow-indigo-500/10"
+                className={`text-2xl font-black uppercase tracking-tighter text-left transition-all duration-200 hover:scale-105 animate-in slide-in-from-left-4 fade-in duration-400 delay-250 relative group px-4 py-2 rounded-xl hover:shadow-lg hover:shadow-indigo-500/10 ${
+                  pathname === '/sign-in'
+                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30'
+                    : 'text-zinc-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-900'
+                }`}
               >
                 <span className="relative z-10">Sign In</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
