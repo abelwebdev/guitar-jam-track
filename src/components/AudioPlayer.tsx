@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { Play, Pause, Volume2, SkipBack, SkipForward, Repeat, Anchor, Gauge, X, ChevronUp, ChevronDown, Download, Loader2 } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Repeat, Anchor, Gauge, X, ChevronUp, ChevronDown, Download, Loader2 } from 'lucide-react';
 import { BackingTrack, PlayerState } from '@/types/types';
 import { useLazyDownloadTrackQuery } from "@/services/api";
 import { toast } from "sonner";
@@ -46,6 +46,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [isTitleOverflowing, setIsTitleOverflowing] = useState(false);
+  const [previousVolume, setPreviousVolume] = useState(0.8);
+
+  // Toggle mute function
+  const toggleMute = () => {
+    console.log('Toggle mute clicked, current volume:', playerState.volume, 'previous:', previousVolume);
+    if (playerState.volume > 0) {
+      setPreviousVolume(playerState.volume);
+      setPlayerState(prev => ({ ...prev, volume: 0 }));
+    } else {
+      const volumeToRestore = previousVolume > 0 ? previousVolume : 0.8;
+      setPlayerState(prev => ({ ...prev, volume: volumeToRestore }));
+    }
+  };
 
   // Audio event handlers
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -456,14 +469,30 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
                 {/* Volume Control */}
                 <div className="flex items-center space-x-2 flex-1 md:flex-none md:w-32 min-w-0">
-                  <Volume2 size={16} className="text-zinc-400 dark:text-zinc-600 shrink-0" />
+                  <button 
+                    type="button"
+                    onClick={toggleMute} 
+                    className="shrink-0 hover:text-indigo-600 transition-colors"
+                  >
+                    {playerState.volume === 0 ? (
+                      <VolumeX size={16} className="text-zinc-400 dark:text-zinc-600" />
+                    ) : (
+                      <Volume2 size={16} className="text-zinc-400 hover:text-indigo-600" />
+                    )}
+                  </button>
                   <input 
                     type="range" 
                     min="0" 
                     max="1" 
                     step="0.01" 
                     value={playerState.volume} 
-                    onChange={(e) => setPlayerState(prev => ({ ...prev, volume: parseFloat(e.target.value) }))} 
+                    onChange={(e) => {
+                      const newVolume = parseFloat(e.target.value);
+                      if (newVolume > 0) {
+                        setPreviousVolume(newVolume);
+                      }
+                      setPlayerState(prev => ({ ...prev, volume: newVolume }));
+                    }} 
                     className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-600 min-w-0" 
                   />
                 </div>
@@ -518,23 +547,36 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             </button>
 
             <div className="flex items-center space-x-2 lg:space-x-3 w-28 lg:w-48 xl:w-56 transition-all">
-              <Volume2 size={16} className="lg:w-5 lg:h-5 text-zinc-400 dark:text-zinc-600" />
+              <button 
+                type="button"
+                onClick={toggleMute} 
+                className="shrink-0 hover:text-indigo-600 transition-colors"
+              >
+                {playerState.volume === 0 ? (
+                  <VolumeX size={16} className="lg:w-5 lg:h-5 text-zinc-400 dark:text-zinc-600" />
+                ) : (
+                  <Volume2 size={16} className="lg:w-5 lg:h-5 text-zinc-400 hover:text-indigo-600" />
+                )}
+              </button>
               <input 
                 type="range" 
                 min="0" 
                 max="1" 
                 step="0.01" 
                 value={playerState.volume} 
-                onChange={(e) => setPlayerState(prev => ({ ...prev, volume: parseFloat(e.target.value) }))} 
+                onChange={(e) => {
+                  const newVolume = parseFloat(e.target.value);
+                  if (newVolume > 0) {
+                    setPreviousVolume(newVolume);
+                  }
+                  setPlayerState(prev => ({ ...prev, volume: newVolume }));
+                }} 
                 className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-600 hover:h-2 transition-all" 
               />
             </div>
-
-
           </div>
         </div>
       </footer>
-
       {/* Spacer to prevent content from being hidden behind player */}
       <div className={`transition-all duration-300 ${playerState.currentTrack ? (isMobileExpanded ? 'h-[280px] lg:h-32' : 'h-24 lg:h-32') : 'h-0'}`} />
     </>
