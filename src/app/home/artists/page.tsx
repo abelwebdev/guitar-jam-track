@@ -8,6 +8,7 @@ import {
 import { BackingTrack } from '../../../types/types';
 import { useGetAllArtistsQuery, useGetArtistTracksQuery, useSearchArtistsQuery, useGetPlaylistQuery, useAddTrackToPlaylistMutation, useCreatePlaylistMutation, useGetFavoritesQuery, useAddToFavoritesMutation, useRemoveFromFavoritesMutation } from "@/services/api";
 import { usePlayer } from "@/contexts/PlayerContext";
+import { toast } from 'sonner';
 
 type Artist = {
   id: number;
@@ -496,10 +497,15 @@ export default function Artists() {
         playlistId,
         trackId: Number(selectedTrack.id)
       }).unwrap();
-      // You could add a success toast here
-    } catch (error) {
+      toast.success('Track added to playlist');
+      refetchPlaylists();
+    } catch (error: any) {
       console.error('Failed to add track to playlist:', error);
-      // You could add an error toast here
+      if (error?.status === 409 || error?.data?.error?.includes('already exists')) {
+        toast.error('Track already exists in this playlist');
+      } else {
+        toast.error('Failed to add track to playlist');
+      }
     }
   };
 
@@ -513,11 +519,15 @@ export default function Artists() {
         playlistId: newPlaylist.id,
         trackId: Number(selectedTrack.id)
       }).unwrap();
-      refetchPlaylists();
-      // You could add a success toast here
-    } catch (error) {
+      await refetchPlaylists();
+      toast.success(`Playlist "${name}" created and track added`);
+    } catch (error: any) {
       console.error('Failed to create playlist or add track:', error);
-      // You could add an error toast here
+      if (error?.status === 409 || error?.data?.error?.includes('already exists')) {
+        toast.error('Track already exists in this playlist');
+      } else {
+        toast.error('Failed to create playlist');
+      }
     }
   };
 

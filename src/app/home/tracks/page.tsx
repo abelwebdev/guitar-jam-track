@@ -6,6 +6,7 @@ import Image from "next/image";
 import { BackingTrack } from '@/types/types';
 import { useGetAllTracksQuery, useGetPlaylistQuery, useAddTrackToPlaylistMutation, useCreatePlaylistMutation, useGetFavoritesQuery, useAddToFavoritesMutation, useRemoveFromFavoritesMutation } from '@/services/api';
 import { usePlayer } from '@/contexts/PlayerContext';
+import { toast } from 'sonner';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -20,8 +21,8 @@ const AddToPlaylistModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   track: BackingTrack | null;
-  onAddToPlaylist: (playlistId: number) => void;
-  onCreatePlaylist: (name: string) => void;
+  onAddToPlaylist: (playlistId: number) => Promise<void>;
+  onCreatePlaylist: (name: string) => Promise<void>;
   playlists: ApiPlaylist[];
   isLoading?: boolean;
 }> = ({ isOpen, onClose, track, onAddToPlaylist, onCreatePlaylist, playlists, isLoading = false }) => {
@@ -52,9 +53,18 @@ const AddToPlaylistModal: React.FC<{
     }
   }, [isOpen, onClose]);
 
-  const handleAddToPlaylist = (playlistId: number) => {
-    onAddToPlaylist(playlistId);
+  const handleAddToPlaylist = async (playlistId: number) => {
     setAddedToPlaylists(prev => new Set([...prev, playlistId]));
+    try {
+      await onAddToPlaylist(playlistId);
+    } catch (error) {
+      // Revert if failed
+      setAddedToPlaylists(prev => {
+        const next = new Set(prev);
+        next.delete(playlistId);
+        return next;
+      });
+    }
   };
 
   const handleCreatePlaylist = (e: React.FormEvent) => {
@@ -385,10 +395,14 @@ export default function TracksPage() {
         playlistId,
         trackId: Number(selectedTrack.id)
       }).unwrap();
-      // You could add a success toast here
-    } catch (error) {
+      refetchPlaylists();
+    } catch (error: any) {
       console.error('Failed to add track to playlist:', error);
-      // You could add an error toast here
+      if (error?.status === 409 || error?.data?.error?.includes('already exists')) {
+        toast.error('Track already exists in this playlist');
+      } else {
+        toast.error('Failed to add track to playlist');
+      }
     }
   };
 
@@ -402,11 +416,15 @@ export default function TracksPage() {
         playlistId: newPlaylist.id,
         trackId: Number(selectedTrack.id)
       }).unwrap();
-      refetchPlaylists();
-      // You could add a success toast here
-    } catch (error) {
+      await refetchPlaylists();
+      toast.success(`Playlist "${name}" created and track added`);
+    } catch (error: any) {
       console.error('Failed to create playlist or add track:', error);
-      // You could add an error toast here
+      if (error?.status === 409 || error?.data?.error?.includes('already exists')) {
+        toast.error('Track already exists in this playlist');
+      } else {
+        toast.error('Failed to create playlist');
+      }
     }
   };
 
@@ -426,8 +444,10 @@ export default function TracksPage() {
     try {
       if (currentlyFavorite) {
         await removeFromFavorites({ trackId: trackIdNum }).unwrap();
+        toast.success('Removed from favorites');
       } else {
         await addToFavorites({ trackId: trackIdNum }).unwrap();
+        toast.success('Added to favorites');
       }
       // The useEffect will clear the optimistic state once favoritesData updates
     } catch (error) {
