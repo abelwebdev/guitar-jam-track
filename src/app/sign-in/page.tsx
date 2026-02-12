@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Lock, User, Menu, X  } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -10,10 +10,8 @@ import { useSessionLoginMutation } from "@/services/api";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Audiowide } from 'next/font/google'
-const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
-
+import { Audiowide } from 'next/font/google';
+const audiowide = Audiowide({ subsets: ['latin'], weight: '400' });
 
 export default function Page() {
   const router = useRouter();
@@ -22,7 +20,6 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [sessionLogin] = useSessionLoginMutation();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const pathname = usePathname();  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -30,13 +27,14 @@ export default function Page() {
     setIsClient(true);
   }, []);
 
+  const isLoadingRef = useRef(false);
+
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user && user.emailVerified) {
+      if (user && user.emailVerified && !isLoadingRef.current) {
         router.push("/home");
-      } else {
-        setCheckingAuth(false);
       }
+      setCheckingAuth(false);
     });
     return () => unsubscribe();
   }, [router]);
@@ -45,6 +43,7 @@ export default function Page() {
     e.preventDefault();
     if (checkingAuth || loading) return;
     
+    isLoadingRef.current = true;
     setLoading(true);
     
     try {
@@ -69,6 +68,7 @@ export default function Page() {
         toast.success("Welcome back!");
         const idToken = await getIdToken(user, true);
         await sessionLogin({ idToken, username }).unwrap();
+        router.refresh();
         router.push("/home");
       } else {
         if (!formData.name.trim()) {
@@ -147,12 +147,13 @@ export default function Page() {
       }
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
   const handleGoogleAuth = async () => {
     if (checkingAuth || loading) return;
-    
+    isLoadingRef.current = true;
     setLoading(true);
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
@@ -160,6 +161,7 @@ export default function Page() {
       toast.success("Welcome!");
       const idToken = await getIdToken(user, true);
       await sessionLogin({ idToken }).unwrap();
+      router.refresh();
       router.push("/home");
     } catch (error: any) {
       if (error.code === "auth/popup-closed-by-user") {
@@ -173,6 +175,7 @@ export default function Page() {
       }
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
