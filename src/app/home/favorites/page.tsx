@@ -80,6 +80,7 @@ export default function FavoritesPage() {
   // API queries
   const { data: favoritesData = [], isLoading: favoritesLoading, error: favoritesError } = useGetFavoritesQuery();
   const [removeFromFavorites] = useRemoveFromFavoritesMutation();
+  const [optimisticRemovals, setOptimisticRemovals] = React.useState<Set<string>>(new Set());
 
   // Use PlayerContext
   const { playerState, handlePlayTrack } = usePlayer();
@@ -92,8 +93,28 @@ export default function FavoritesPage() {
       title: track.track_title || track.title || 'Unknown Track',
       audioUrl: track.track_url || '',
       coverUrl: '/background-placeholder.jpg'
-    }));
-  }, [favoritesData]);
+    })).filter(track => !optimisticRemovals.has(track.id.toString()));
+  }, [favoritesData, optimisticRemovals]);
+
+  // Sync optimistic removals with server data
+  React.useEffect(() => {
+    if (optimisticRemovals.size === 0) return;
+    
+    setOptimisticRemovals(prev => {
+      const next = new Set(prev);
+      let changed = false;
+      
+      const serverIds = new Set(favoritesData.map(f => f.id.toString()));
+      next.forEach(id => {
+        if (!serverIds.has(id)) {
+          next.delete(id);
+          changed = true;
+        }
+      });
+      
+      return changed ? next : prev;
+    });
+  }, [favoritesData, optimisticRemovals]);
 
   // Handle track play
   const handlePreviewPlay = (track: BackingTrack) => {
@@ -107,10 +128,26 @@ export default function FavoritesPage() {
 
   // Handle remove from favorites
   const handleRemoveFromFavorites = async (track: BackingTrack) => {
+    const trackIdStr = track.id.toString();
+    
+    // Set optimistic removal
+    setOptimisticRemovals(prev => {
+      const next = new Set(prev);
+      next.add(trackIdStr);
+      return next;
+    });
+    
     try {
       await removeFromFavorites({ trackId: Number(track.id) }).unwrap();
+      // useEffect will handle clearing once server data updates
     } catch (error) {
       console.error('Failed to remove from favorites:', error);
+      // Revert optimistic removal on error
+      setOptimisticRemovals(prev => {
+        const next = new Set(prev);
+        next.delete(trackIdStr);
+        return next;
+      });
     }
   };
 

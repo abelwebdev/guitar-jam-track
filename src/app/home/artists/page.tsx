@@ -341,6 +341,7 @@ export default function Artists() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [selectedTrack, setSelectedTrack] = useState<BackingTrack | null>(null);
+  const [optimisticFavorites, setOptimisticFavorites] = useState<Record<string, boolean>>({});
   
   // Use PlayerContext
   const { playerState, handlePlayTrack } = usePlayer();
@@ -393,6 +394,23 @@ export default function Artists() {
   const favoriteTrackIds = useMemo(() => {
     return new Set(favoritesData.map(fav => fav.id.toString()));
   }, [favoritesData]);
+
+  // Sync optimistic favorites with server data
+  useEffect(() => {
+    if (Object.keys(optimisticFavorites).length === 0) return;
+    
+    setOptimisticFavorites(prev => {
+      const next = { ...prev };
+      let changed = false;
+      Object.keys(next).forEach(id => {
+        if (next[id] === favoriteTrackIds.has(id)) {
+          delete next[id];
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [favoriteTrackIds, optimisticFavorites]);
 
   // Pagination handlers
   const handlePrevPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
@@ -505,18 +523,32 @@ export default function Artists() {
 
   // Handle toggle favorite
   const handleToggleFavorite = async (track: BackingTrack) => {
-    const trackId = Number(track.id);
-    const isFavorite = favoriteTrackIds.has(track.id.toString());
+    const trackIdStr = track.id.toString();
+    const trackIdNum = Number(track.id);
+    const currentlyFavorite = optimisticFavorites[trackIdStr] ?? favoriteTrackIds.has(trackIdStr);
+    const newFavoriteStatus = !currentlyFavorite;
+    
+    // Set optimistic state immediately
+    setOptimisticFavorites(prev => ({
+      ...prev,
+      [trackIdStr]: newFavoriteStatus
+    }));
     
     try {
-      if (isFavorite) {
-        await removeFromFavorites({ trackId }).unwrap();
+      if (currentlyFavorite) {
+        await removeFromFavorites({ trackId: trackIdNum }).unwrap();
       } else {
-        await addToFavorites({ trackId }).unwrap();
+        await addToFavorites({ trackId: trackIdNum }).unwrap();
       }
+      // The useEffect will clear the optimistic state once favoritesData updates
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
-      // You could add an error toast here
+      // Revert optimistic state on error
+      setOptimisticFavorites(prev => {
+        const next = { ...prev };
+        delete next[trackIdStr];
+        return next;
+      });
     }
   };
 
@@ -765,7 +797,7 @@ export default function Artists() {
                         onPlay={handlePreviewPlay}
                         onAddToPlaylist={handleAddToPlaylist}
                         onToggleFavorite={handleToggleFavorite}
-                        isFavorite={favoriteTrackIds.has(track.id.toString())}
+                        isFavorite={optimisticFavorites[track.id.toString()] ?? favoriteTrackIds.has(track.id.toString())}
                       />
                     ))}
                   </div>
