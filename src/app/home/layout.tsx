@@ -322,7 +322,7 @@ function LogoutConfirmModal({ isOpen, onClose, onConfirm }: LogoutConfirmModalPr
             </div>
             <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">Sign Out</h2>
             <p className="text-zinc-500 dark:text-zinc-400 mb-8">
-              Are you sure you want to sign out? You'll need to sign back in to access your dashboard.
+              Are you sure you want to sign out? You&apos;ll need to sign back in to access your dashboard.
             </p>
             <div className="flex gap-3">
               <button
