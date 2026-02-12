@@ -49,6 +49,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
   const [isProfileEditModalOpen, setIsProfileEditModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [idToken, setIdToken] = useState<string | null>(null);
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
@@ -244,7 +245,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
                     <UserIcon size={18} />
                     <span>My Profile</span>
                   </button>
-                  <button onClick={() => { setIsProfileDropdownOpen(false); handleLogout(); }} className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all font-bold">
+                  <button onClick={() => { setIsProfileDropdownOpen(false); setIsLogoutModalOpen(true); }} className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all font-bold">
                     <LogOut size={18} />
                     <span>Log Out</span>
                   </button>
@@ -285,8 +286,65 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
           idToken={idToken}
         />
       )}
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+      />
       </div>
     </div>
+  );
+}
+
+interface LogoutConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+function LogoutConfirmModal({ isOpen, onClose, onConfirm }: LogoutConfirmModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div 
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] animate-in fade-in duration-200"
+        onClick={onClose}
+      />
+      
+      <div className="fixed inset-0 z-[201] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 duration-200">
+          <div className="p-6 text-center">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <LogOut className="text-red-600 dark:text-red-400" size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">Sign Out</h2>
+            <p className="text-zinc-500 dark:text-zinc-400 mb-8">
+              Are you sure you want to sign out? You'll need to sign back in to access your dashboard.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onConfirm();
+                  onClose();
+                }}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition-all shadow-lg shadow-red-600/20"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
