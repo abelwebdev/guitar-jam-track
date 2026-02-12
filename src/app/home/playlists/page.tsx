@@ -420,10 +420,24 @@ export default function PlaylistsPage() {
 
   if (playlistsLoading) {
     return (
-      <div className="animate-in fade-in duration-500">
+      <div className="pt-8 pb-24 px-6 md:px-12 animate-in fade-in duration-500">
+        <div className="flex items-center justify-between mb-10">
+          <div className="space-y-2">
+            <div className="h-10 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-xl animate-pulse" />
+            <div className="h-4 w-64 bg-zinc-100 dark:bg-zinc-900 rounded-lg animate-pulse" />
+          </div>
+          <div className="h-12 w-40 bg-zinc-200 dark:bg-zinc-800 rounded-2xl animate-pulse" />
+        </div>
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="animate-pulse p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-800 h-32" />
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 space-y-3 animate-pulse">
+              <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+              <div className="space-y-2">
+                <div className="h-4 w-3/4 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                <div className="h-3 w-1/4 bg-zinc-200 dark:bg-zinc-800 rounded" />
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -437,7 +451,7 @@ export default function PlaylistsPage() {
           <div className="flex items-center justify-between mb-10">
             <div>
               <h2 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight mb-2 uppercase tracking-tighter">My Playlists</h2>
-              <p className="text-zinc-500 text-sm font-medium">Organize your practice routines.</p>
+              <p className="text-zinc-500 text-sm font-medium">Organize your practice playlists.</p>
             </div>
             <button
               onClick={() => setShowPlaylistModal(true)}
@@ -502,9 +516,18 @@ export default function PlaylistsPage() {
           </div>
           
           {tracksLoading ? (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="animate-pulse h-16 bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
+                <div key={i} className="flex items-center justify-between p-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 animate-pulse">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-800" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                      <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-4 w-12 bg-zinc-200 dark:bg-zinc-800 rounded" />
+                </div>
               ))}
             </div>
           ) : playlistTracks.length > 0 ? (
