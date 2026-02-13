@@ -42,7 +42,9 @@ export async function GET(req: NextRequest) {
       include: { track: { include: { artist: true } } },
     });
 
-    if (!playlistTracks.length) return NextResponse.json({ error: "No tracks found for this playlist" }, { status: 404 });
+    if (!playlistTracks.length) {
+      return NextResponse.json([], { status: 200 });
+    }
 
     const tracks = playlistTracks.map((pt) => pt.track);
     return NextResponse.json(tracks, { status: 200 });

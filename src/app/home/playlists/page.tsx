@@ -2,10 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from "next/image";
-import { 
-  ListMusic, Disc, FolderPlus, Trash2, ChevronLeft, 
-  Clock, Music, Play, Pause, X, Edit3
-} from 'lucide-react';
+import { ListMusic, Disc, FolderPlus, Trash2, ChevronLeft, Music, Play, Pause, X, Edit3 } from 'lucide-react';
 import { BackingTrack } from '@/types/types';
 import { 
   useGetPlaylistQuery, 
@@ -294,7 +291,7 @@ export default function PlaylistsPage() {
   // API queries and mutations
   const { data: playlists = [], isLoading: playlistsLoading, refetch: refetchPlaylists } = useGetPlaylistQuery();
   const [createPlaylist, { isLoading: isCreating }] = useCreatePlaylistMutation();
-  const [deletePlaylist, { isLoading: isDeleting }] = useDeletePlaylistMutation();
+  const [deletePlaylist] = useDeletePlaylistMutation();
   const [updatePlaylist, { isLoading: isUpdating }] = useUpdatePlaylistMutation();
   const [removeTracksFromPlaylist] = useRemoveTracksFromPlaylistMutation();
 
@@ -406,8 +403,8 @@ export default function PlaylistsPage() {
               playlistId: selectedPlaylistId,
               trackIds: [trackId]
             }).unwrap();
-            refetchTracks();
-            refetchPlaylists(); // Update track count
+            await refetchTracks();
+            await refetchPlaylists(); // Update track count
             toast.success('Track removed');
           } catch (error) {
             console.error('Failed to remove track:', error);
@@ -450,7 +447,7 @@ export default function PlaylistsPage() {
         <>
           <div className="flex items-center justify-between mb-10">
             <div>
-              <h2 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight mb-2 uppercase tracking-tighter">My Playlists</h2>
+              <h2 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-white tracking-tight mb-2 uppercase">My Playlists</h2>
               <p className="text-zinc-500 text-sm font-medium">Organize your practice playlists.</p>
             </div>
             <button
