@@ -135,22 +135,20 @@
 }
 
 @keyframes slide-title {
-  0%, 20% {
+  0%, 15% {
     transform: translateX(0);
   }
-  45%, 55% {
-    transform: translateX(calc(-100% + 100px));
+  50%, 65% {
+    transform: translateX(calc(-100% + 60px));
   }
-  80%, 100% {
+  100% {
     transform: translateX(0);
   }
 }
 
 .animate-slide-title {
-  animation: slide-title 24s ease-in-out infinite;
-}
-
-/* Only animate if title is wider than container */
-.animate-slide-title:not(:hover) {
-  animation-play-state: running;
+  animation: slide-title 18s linear infinite;
+  display: inline-block;
+  will-change: transform;
+  padding-right: 1rem;
 }

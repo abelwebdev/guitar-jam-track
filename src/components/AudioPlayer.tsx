@@ -143,16 +143,29 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   // Check if title is overflowing
   useEffect(() => {
     const checkOverflow = () => {
-      if (titleRef.current) {
-        const isOverflowing = titleRef.current.scrollWidth > titleRef.current.clientWidth;
+      if (titleRef.current && titleRef.current.parentElement) {
+        // Force reflow
+        titleRef.current.offsetHeight;
+        const scrollWidth = titleRef.current.scrollWidth;
+        const parentWidth = titleRef.current.parentElement.clientWidth;
+        const isOverflowing = scrollWidth > parentWidth;
         setIsTitleOverflowing(isOverflowing);
       }
     };
 
+    // Multiple checks to ensure DOM is ready
     checkOverflow();
+    const timeout1 = setTimeout(checkOverflow, 100);
+    const timeout2 = setTimeout(checkOverflow, 400);
+    
     window.addEventListener('resize', checkOverflow);
-    return () => window.removeEventListener('resize', checkOverflow);
-  }, [playerState.currentTrack?.track_title, playerState.currentTrack?.title]);
+    
+    return () => {
+      window.removeEventListener('resize', checkOverflow);
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+    };
+  }, [playerState.currentTrack?.track_title, playerState.currentTrack?.title, isMobileExpanded]);
 
   const handleClose = useCallback(() => {
     setPlayerState(prev => ({ 
@@ -248,7 +261,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         />
         
         {/* Seeker Bar */}
-        <div className="w-full relative h-6 lg:h-10 flex items-center justify-center px-4 lg:px-8 group bg-zinc-50/50 dark:bg-zinc-900/10 border-b border-zinc-100 dark:border-zinc-800/50">
+        <div className="w-full relative h-6 lg:h-10 flex items-center justify-center px-4 lg:px-8 group bg-zinc-50/50 dark:bg-zinc-900/10">
           <div className="w-full max-w-5xl flex items-center space-x-3 lg:space-x-4">
             <span className="text-[9px] lg:text-[10px] font-black text-zinc-500 tabular-nums min-w-[30px] lg:min-w-[35px] text-right">{formatTime(playerState.currentTime)}</span>
             <div className="flex-1 relative h-5 flex items-center cursor-pointer select-none group/seeker">
@@ -337,10 +350,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               />
             </div>
             <div className="min-w-0 flex-1 text-left overflow-hidden">
-              <div className="overflow-hidden mb-0.5">
+              <div className="overflow-hidden mb-0.5 relative">
                 <h4 
                   ref={titleRef}
-                  className={`font-black text-zinc-900 dark:text-white leading-tight transition-all whitespace-nowrap inline-block ${isMobileExpanded ? 'text-lg' : 'text-xs lg:text-sm'} ${isTitleOverflowing ? 'animate-slide-title' : ''}`}
+                  className={`font-black text-zinc-900 dark:text-white leading-tight whitespace-nowrap ${isMobileExpanded ? 'text-lg' : 'text-xs lg:text-sm'} ${isTitleOverflowing ? 'animate-slide-title' : ''}`}
                 >
                   {playerState.currentTrack?.track_title || playerState.currentTrack?.title || 'Unknown Track'}
                 </h4>
@@ -423,79 +436,79 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
             {/* Mobile Expanded Secondary Controls (Speed & Volume) */}
             <div className={`${isMobileExpanded ? 'flex' : 'hidden'} lg:hidden w-full items-center justify-between gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/50 mt-4`}>
-                {/* Speed Control */}
-                <div className="relative">
-                  <button 
-                    onClick={() => setIsSpeedMenuOpen(!isSpeedMenuOpen)}
-                    className={`flex items-center space-x-1.5 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isSpeedMenuOpen ? 'border-indigo-500 ring-1 ring-indigo-500/10' : ''}`}
-                  >
-                    <Gauge size={14} className="text-indigo-500" />
-                    <span>{playerState.playbackRate.toFixed(2)}x</span>
-                  </button>
-                  {isSpeedMenuOpen && (
-                    <>
-                      <div className="fixed inset-0 z-[190]" onClick={() => setIsSpeedMenuOpen(false)} />
-                      <div className="absolute bottom-full left-0 mb-2 w-24 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden py-1 z-[210]">
-                        {speeds.map(s => (
-                          <button 
-                            key={s}
-                            onClick={() => {
-                              setPlayerState(prev => ({ ...prev, playbackRate: s }));
-                              setIsSpeedMenuOpen(false);
-                            }}
-                            className={`w-full px-3 py-2 text-left text-[10px] font-bold ${playerState.playbackRate === s ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20' : 'text-zinc-500 dark:text-zinc-400'}`}
-                          >
-                            {s.toFixed(2)}x
-                          </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Download Button (Mobile) */}
-                <button
-                    onClick={handleDownload}
-                    disabled={isDownloading}
-                    className={`p-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-400 hover:text-indigo-600 transition-colors disabled:cursor-not-allowed ${isDownloading ? 'cursor-not-allowed' : ''}`}
-                    title={isDownloading ? "Downloading..." : "Download Track"}
-                  >
-                    {isDownloading ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <Download size={16} />
-                    )}
+              {/* Speed Control */}
+              <div className="relative">
+                <button 
+                  onClick={() => setIsSpeedMenuOpen(!isSpeedMenuOpen)}
+                  className={`flex items-center space-x-1.5 px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isSpeedMenuOpen ? 'border-indigo-500 ring-1 ring-indigo-500/10' : ''}`}
+                >
+                  <Gauge size={14} className="text-indigo-500" />
+                  <span>{playerState.playbackRate.toFixed(2)}x</span>
                 </button>
+                {isSpeedMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-[190]" onClick={() => setIsSpeedMenuOpen(false)} />
+                    <div className="absolute bottom-full left-0 mb-2 w-24 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl overflow-hidden py-1 z-[210]">
+                      {speeds.map(s => (
+                        <button 
+                          key={s}
+                          onClick={() => {
+                            setPlayerState(prev => ({ ...prev, playbackRate: s }));
+                            setIsSpeedMenuOpen(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-[10px] font-bold ${playerState.playbackRate === s ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20' : 'text-zinc-500 dark:text-zinc-400'}`}
+                        >
+                          {s.toFixed(2)}x
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
 
-                {/* Volume Control */}
-                <div className="flex items-center space-x-2 flex-1 md:flex-none md:w-32 min-w-0">
-                  <button 
-                    type="button"
-                    onClick={toggleMute} 
-                    className="shrink-0 hover:text-indigo-600 transition-colors"
-                  >
-                    {playerState.volume === 0 ? (
-                      <VolumeX size={16} className="text-zinc-400 dark:text-zinc-600" />
-                    ) : (
-                      <Volume2 size={16} className="text-zinc-400 hover:text-indigo-600" />
-                    )}
-                  </button>
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="1" 
-                    step="0.01" 
-                    value={playerState.volume} 
-                    onChange={(e) => {
-                      const newVolume = parseFloat(e.target.value);
-                      if (newVolume > 0) {
-                        setPreviousVolume(newVolume);
-                      }
-                      setPlayerState(prev => ({ ...prev, volume: newVolume }));
-                    }} 
-                    className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-600 min-w-0" 
-                  />
-                </div>
+              {/* Download Button (Mobile) */}
+              <button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className={`p-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-zinc-400 hover:text-indigo-600 transition-colors disabled:cursor-not-allowed ${isDownloading ? 'cursor-not-allowed' : ''}`}
+                  title={isDownloading ? "Downloading..." : "Download Track"}
+                >
+                  {isDownloading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Download size={16} />
+                  )}
+              </button>
+
+              {/* Volume Control */}
+              <div className="flex items-center space-x-2 flex-1 md:flex-none md:w-32 min-w-0">
+                <button 
+                  type="button"
+                  onClick={toggleMute} 
+                  className="shrink-0 hover:text-indigo-600 transition-colors"
+                >
+                  {playerState.volume === 0 ? (
+                    <VolumeX size={16} className="text-zinc-400 dark:text-zinc-600" />
+                  ) : (
+                    <Volume2 size={16} className="text-zinc-400 hover:text-indigo-600" />
+                  )}
+                </button>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="1" 
+                  step="0.01" 
+                  value={playerState.volume} 
+                  onChange={(e) => {
+                    const newVolume = parseFloat(e.target.value);
+                    if (newVolume > 0) {
+                      setPreviousVolume(newVolume);
+                    }
+                    setPlayerState(prev => ({ ...prev, volume: newVolume }));
+                  }} 
+                  className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full appearance-none cursor-pointer accent-indigo-600 min-w-0" 
+                />
+              </div>
             </div>
           </div>
 
