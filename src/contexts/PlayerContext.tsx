@@ -43,22 +43,22 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
   const [favorites, setFavorites] = useState<string[]>([]);
 
   const handlePlayTrack = (track: BackingTrack) => {
-    if (playerState.currentTrack?.id === track.id) {
+    if (playerState.currentTrack?.id?.toString() === track.id?.toString()) {
       setPlayerState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
     } else {
-      setPlayerState(prev => ({ 
-        ...prev, 
-        currentTrack: track, 
+      setPlayerState(prev => ({
+        ...prev,
+        currentTrack: track,
         isPlaying: true,
-        currentTime: 0 
+        currentTime: 0
       }));
     }
   };
 
   const toggleFavorite = (track: BackingTrack) => {
-    setFavorites(prev => 
-      prev.includes(track.id.toString()) 
-        ? prev.filter(id => id !== track.id.toString()) 
+    setFavorites(prev =>
+      prev.includes(track.id.toString())
+        ? prev.filter(id => id !== track.id.toString())
         : [...prev, track.id.toString()]
     );
   };
@@ -68,10 +68,10 @@ export const PlayerProvider: React.FC<PlayerProviderProps> = ({ children }) => {
   };
 
   const handleSeek = (time: number) => {
-    setPlayerState(prev => ({ 
-      ...prev, 
+    setPlayerState(prev => ({
+      ...prev,
       currentTime: time,
-      duration: prev.duration || time 
+      duration: prev.duration || time
     }));
   };
 

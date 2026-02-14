@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Play, ChevronRight, X, Search, Pause, Volume2, Download, VolumeX, Loader2, Menu } from 'lucide-react';
 import { BackingTrack } from '../../types/types';
 import { useGetAllTracksQuery, useSearchTracksQuery, useLazyDownloadTrackQuery } from "@/services/api";
-import { toast } from "sonner";
+import { toast } from 'react-toastify';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Audiowide } from 'next/font/google'

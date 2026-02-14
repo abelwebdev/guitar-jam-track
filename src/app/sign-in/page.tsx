@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Lock, User, Menu, X  } from 'lucide-react';
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from 'react-toastify';
 import { auth, googleProvider } from "@/lib/firebaseClient";
 import { signInWithEmailAndPassword, signInWithPopup, getIdToken, updateProfile, sendPasswordResetEmail, createUserWithEmailAndPassword, sendEmailVerification, fetchSignInMethodsForEmail } from "firebase/auth";
 import { useSessionLoginMutation } from "@/services/api";
@@ -52,9 +52,12 @@ export default function Page() {
         const user = userCredential.user;
         
         if (!user.emailVerified) {
-          toast.error("Verify your email first", {
-            description: "Check your inbox for the verification link."
-          });
+          toast.error(
+            <div>
+              <p className="font-bold text-sm">Verify your email first</p>
+              <p className="text-xs opacity-80">Check your inbox for the verification link.</p>
+            </div>
+          );
           await auth.signOut();
           return;
         }
@@ -78,9 +81,12 @@ export default function Page() {
 
         const signInMethods = await fetchSignInMethodsForEmail(auth, formData.email);
         if (signInMethods.length > 0) {
-          toast.error("Email already registered", {
-            description: "Try signing in instead."
-          });
+          toast.error(
+            <div>
+              <p className="font-bold text-sm">Email already registered</p>
+              <p className="text-xs opacity-80">Try signing in instead.</p>
+            </div>
+          );
           setIsLogin(true);
           return;
         }
@@ -95,9 +101,12 @@ export default function Page() {
         await sendEmailVerification(user);
         await auth.signOut();
         
-        toast.success("Check your email", {
-          description: "Click the verification link to activate your account."
-        });
+        toast.success(
+          <div>
+            <p className="font-bold text-sm">Check your email</p>
+            <p className="text-xs opacity-80">Click the verification link to activate your account.</p>
+          </div>
+        );
         
         setIsLogin(true);
         setFormData(prev => ({ ...prev, password: '' }));
@@ -105,9 +114,12 @@ export default function Page() {
     } catch (error: any) {
       switch (error.code) {
         case "auth/user-not-found":
-          toast.error("No account found", {
-            description: "Create an account to get started."
-          });
+          toast.error(
+            <div>
+              <p className="font-bold text-sm">No account found</p>
+              <p className="text-xs opacity-80">Create an account to get started.</p>
+            </div>
+          );
           setIsLogin(false);
           break;
         case "auth/wrong-password":
@@ -117,30 +129,45 @@ export default function Page() {
           toast.error("Invalid email address");
           break;
         case "auth/email-already-in-use":
-          toast.error("Email already registered", {
-            description: "Try signing in instead."
-          });
+          toast.error(
+            <div>
+              <p className="font-bold text-sm">Email already registered</p>
+              <p className="text-xs opacity-80">Try signing in instead.</p>
+            </div>
+          );
           setIsLogin(true);
           break;
         case "auth/weak-password":
-          toast.error("Password too weak", {
-            description: "Use at least 6 characters."
-          });
+          toast.error(
+            <div>
+              <p className="font-bold text-sm">Password too weak</p>
+              <p className="text-xs opacity-80">Use at least 6 characters.</p>
+            </div>
+          );
           break;
         case "auth/operation-not-allowed":
-          toast.error("Sign up unavailable", {
-            description: "Contact support for help."
-          });
+          toast.error(
+            <div>
+              <p className="font-bold text-sm">Sign up unavailable</p>
+              <p className="text-xs opacity-80">Contact support for help.</p>
+            </div>
+          );
           break;
         case "auth/too-many-requests":
-          toast.error("Too many attempts", {
-            description: "Try again in a few minutes."
-          });
+          toast.error(
+            <div>
+              <p className="font-bold text-sm">Too many attempts</p>
+              <p className="text-xs opacity-80">Try again in a few minutes.</p>
+            </div>
+          );
           break;
         case "auth/user-disabled":
-          toast.error("Account disabled", {
-            description: "Contact support for help."
-          });
+          toast.error(
+            <div>
+              <p className="font-bold text-sm">Account disabled</p>
+              <p className="text-xs opacity-80">Contact support for help.</p>
+            </div>
+          );
           break;
         default:
           toast.error(isLogin ? "Sign in failed" : "Sign up failed");
@@ -167,9 +194,12 @@ export default function Page() {
       if (error.code === "auth/popup-closed-by-user") {
         toast.info("Sign in cancelled");
       } else if (error.code === "auth/popup-blocked") {
-        toast.error("Popup blocked", {
-          description: "Allow popups and try again."
-        });
+        toast.error(
+          <div>
+            <p className="font-bold text-sm">Popup blocked</p>
+            <p className="text-xs opacity-80">Allow popups and try again.</p>
+          </div>
+        );
       } else {
         toast.error("Google sign in failed");
       }
@@ -190,9 +220,12 @@ export default function Page() {
     setLoading(true);
     try {
       await sendPasswordResetEmail(auth, formData.email);
-      toast.success("Reset link sent", {
-        description: "Check your inbox for instructions."
-      });
+      toast.success(
+        <div>
+          <p className="font-bold text-sm">Reset link sent</p>
+          <p className="text-xs opacity-80">Check your inbox for instructions.</p>
+        </div>
+      );
     } catch (error: any) {
       switch (error.code) {
         case "auth/user-not-found":
@@ -202,9 +235,12 @@ export default function Page() {
           toast.error("Invalid email address");
           break;
         case "auth/too-many-requests":
-          toast.error("Too many requests", {
-            description: "Wait a few minutes and try again."
-          });
+          toast.error(
+            <div>
+              <p className="font-bold text-sm">Too many requests</p>
+              <p className="text-xs opacity-80">Wait a few minutes and try again.</p>
+            </div>
+          );
           break;
         default:
           toast.error("Reset failed");

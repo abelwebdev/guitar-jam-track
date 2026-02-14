@@ -7,9 +7,9 @@ import Image from "next/image";
 import { Play, ChevronRight, ArrowLeft, Pause, Volume2, Download, VolumeX, X, Search, Loader2, Menu } from 'lucide-react';
 import { BackingTrack } from '../../types/types';
 import { useGetAllArtistsQuery, useGetArtistTracksQuery, useSearchArtistsQuery, useLazyDownloadTrackQuery } from "@/services/api";
-import { toast } from "sonner";
-import { Audiowide } from 'next/font/google'
-const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
+import { toast } from 'react-toastify';
+import { Audiowide } from 'next/font/google';
+const audiowide = Audiowide({ subsets: ['latin'], weight: '400' });
 
 type Artist = {
   id: number;

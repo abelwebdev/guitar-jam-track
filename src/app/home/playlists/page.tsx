@@ -4,16 +4,17 @@ import React, { useState } from 'react';
 import Image from "next/image";
 import { ListMusic, Disc, FolderPlus, Trash2, ChevronLeft, Music, Play, Pause, X, Edit3 } from 'lucide-react';
 import { BackingTrack } from '@/types/types';
-import { 
-  useGetPlaylistQuery, 
-  useCreatePlaylistMutation, 
+import {
+  useGetPlaylistQuery,
+  useCreatePlaylistMutation,
   useDeletePlaylistMutation,
   useGetPlaylistTracksQuery,
   useRemoveTracksFromPlaylistMutation,
   useUpdatePlaylistMutation
 } from '@/services/api';
 import { usePlayer } from '@/contexts/PlayerContext';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 // Playlist type from API
 type ApiPlaylist = {
@@ -29,18 +30,16 @@ const PlaylistCard: React.FC<{
   onEdit: () => void;
   isEditing?: boolean;
 }> = ({ playlist, onClick, onDelete, onEdit, isEditing = false }) => (
-  <div className={`group relative p-4 rounded-2xl bg-white dark:bg-zinc-900/30 border transition-all duration-300 cursor-pointer shadow-sm ${
-    isEditing 
-      ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20' 
-      : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-900/50'
-  }`}>
+  <div className={`group relative p-4 rounded-2xl bg-white dark:bg-zinc-900/30 border transition-all duration-300 cursor-pointer shadow-sm ${isEditing
+    ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20'
+    : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-900/50'
+    }`}>
     <div onClick={onClick} className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-          isEditing 
-            ? 'bg-indigo-200 dark:bg-indigo-800/50' 
-            : 'bg-indigo-100 dark:bg-indigo-900/30'
-        }`}>
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isEditing
+          ? 'bg-indigo-200 dark:bg-indigo-800/50'
+          : 'bg-indigo-100 dark:bg-indigo-900/30'
+          }`}>
           <ListMusic size={20} className="text-indigo-600 dark:text-indigo-400" />
         </div>
         <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -88,17 +87,17 @@ const TrackRow: React.FC<{
 
   return (
     <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
-      <div 
-        onClick={onPlay} 
+      <div
+        onClick={onPlay}
         className="flex items-center space-x-4 flex-1 cursor-pointer"
       >
         <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
-          <Image 
-            src={'/background-placeholder.jpg'} 
+          <Image
+            src={'/background-placeholder.jpg'}
             alt={track.track_title || track.title || 'Track'}
             width={48}
             height={48}
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover"
           />
           <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
             {isPlaying ? <Pause size={16} fill="white" className="text-white" /> : <Play size={16} fill="white" className="text-white ml-0.5" />}
@@ -301,6 +300,24 @@ export default function PlaylistsPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState<ApiPlaylist | null>(null);
 
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+    variant: 'default' | 'destructive';
+    isLoading?: boolean;
+    loadingText?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: () => { },
+    variant: 'destructive',
+    isLoading: false,
+    loadingText: 'Processing...'
+  });
+
   // Get tracks for selected playlist
   const { data: playlistTracks = [], isLoading: tracksLoading, refetch: refetchTracks } = useGetPlaylistTracksQuery(
     { id: selectedPlaylistId! },
@@ -339,11 +356,11 @@ export default function PlaylistsPage() {
 
   const handleUpdatePlaylist = async (name: string) => {
     if (!editingPlaylist) return;
-    
+
     try {
-      await updatePlaylist({ 
-        id: editingPlaylist.id, 
-        name 
+      await updatePlaylist({
+        id: editingPlaylist.id,
+        name
       }).unwrap();
       await refetchPlaylists();
       // If we're viewing the edited playlist, refetch its tracks too
@@ -358,25 +375,29 @@ export default function PlaylistsPage() {
     }
   };
 
-  const handleDeletePlaylist = async (playlistId: number) => {
-    toast.error('Delete this playlist?', {
-      duration: 10000,
-      action: {
-        label: 'Delete',
-        onClick: async () => {
-          try {
-            await deletePlaylist(playlistId).unwrap();
-            if (selectedPlaylistId === playlistId) {
-              setSelectedPlaylistId(null);
-            }
-            refetchPlaylists();
-            toast.success('Playlist deleted');
-          } catch (error) {
-            console.error('Failed to delete playlist:', error);
-            toast.error('Failed to delete playlist');
+  const handleDeletePlaylist = (playlistId: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Playlist',
+      description: 'Are you sure you want to delete this playlist? This action cannot be undone.',
+      variant: 'destructive',
+      loadingText: 'Deleting...',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isLoading: true }));
+        try {
+          await deletePlaylist(playlistId).unwrap();
+          if (selectedPlaylistId === playlistId) {
+            setSelectedPlaylistId(null);
           }
+          await refetchPlaylists();
+          toast.success('Playlist deleted');
+          setConfirmDialog(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (error) {
+          console.error('Failed to delete playlist:', error);
+          toast.error('Failed to delete playlist');
+          setConfirmDialog(prev => ({ ...prev, isLoading: false }));
         }
-      },
+      }
     });
   };
 
@@ -390,28 +411,32 @@ export default function PlaylistsPage() {
     handlePlayTrack(enhancedTrack);
   };
 
-  const handleRemoveTrack = async (trackId: number) => {
+  const handleRemoveTrack = (trackId: number) => {
     if (!selectedPlaylistId) return;
-    
-    toast.error('Remove track from playlist?', {
-      duration: 10000,
-      action: {
-        label: 'Remove',
-        onClick: async () => {
-          try {
-            await removeTracksFromPlaylist({
-              playlistId: selectedPlaylistId,
-              trackIds: [trackId]
-            }).unwrap();
-            await refetchTracks();
-            await refetchPlaylists(); // Update track count
-            toast.success('Track removed');
-          } catch (error) {
-            console.error('Failed to remove track:', error);
-            toast.error('Failed to remove track');
-          }
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Track',
+      description: 'Remove this track from the playlist?',
+      variant: 'destructive',
+      loadingText: 'Removing...',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isLoading: true }));
+        try {
+          await removeTracksFromPlaylist({
+            playlistId: selectedPlaylistId,
+            trackIds: [trackId]
+          }).unwrap();
+          await refetchTracks();
+          await refetchPlaylists(); // Update track count
+          toast.success('Track removed');
+          setConfirmDialog(prev => ({ ...prev, isOpen: false, isLoading: false }));
+        } catch (error) {
+          console.error('Failed to remove track:', error);
+          toast.error('Failed to remove track');
+          setConfirmDialog(prev => ({ ...prev, isLoading: false }));
         }
-      },
+      }
     });
   };
 
@@ -425,7 +450,7 @@ export default function PlaylistsPage() {
           </div>
           <div className="h-12 w-40 bg-zinc-200 dark:bg-zinc-800 rounded-2xl animate-pulse" />
         </div>
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="p-4 rounded-2xl bg-white dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 space-y-3 animate-pulse">
@@ -458,7 +483,7 @@ export default function PlaylistsPage() {
               <span className="hidden sm:inline">Create Playlist</span>
             </button>
           </div>
-          
+
           {playlists.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {playlists.map((playlist) => (
@@ -511,7 +536,7 @@ export default function PlaylistsPage() {
               <span className="hidden sm:inline">Edit</span>
             </button>
           </div>
-          
+
           {tracksLoading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
@@ -534,7 +559,7 @@ export default function PlaylistsPage() {
                   key={track.id}
                   track={track}
                   index={idx}
-                  isPlaying={playerState.currentTrack?.id === track.id && playerState.isPlaying}
+                  isPlaying={playerState.currentTrack?.id?.toString() === track.id?.toString() && playerState.isPlaying}
                   onPlay={() => handlePlayTrackInPlaylist(track)}
                   onRemove={() => handleRemoveTrack(Number(track.id))}
                 />
@@ -568,6 +593,17 @@ export default function PlaylistsPage() {
         onSubmit={handleUpdatePlaylist}
         currentName={editingPlaylist?.name || ''}
         isLoading={isUpdating}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        onConfirm={confirmDialog.onConfirm}
+        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false, isLoading: false }))}
+        variant={confirmDialog.variant}
+        isLoading={confirmDialog.isLoading}
+        loadingText={confirmDialog.loadingText}
       />
     </div>
   );

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ClientProviders } from "./ClientProviders";
-import { Toaster } from "sonner"
+import { Bounce, ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export const metadata: Metadata = {
   title: "Guitar JamTrack - Professional Backing Tracks for Guitar Practice",
@@ -57,11 +58,18 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body>
-        <Toaster
+        <ToastContainer
           position="top-center"
+          autoClose={2000}
+          hideProgressBar
+          newestOnTop={false}
+          closeOnClick={false}
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover={false}
           theme="dark"
-          richColors
-          offset="140px"
+          transition={Bounce}
         />
         <ClientProviders>
           {children}

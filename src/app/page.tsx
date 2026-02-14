@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { Zap, ChevronRight, X, Hash, Grid, Gauge, ListMusic, Heart, Menu, Play, Pause, Volume2, VolumeX, Download, Loader2 } from 'lucide-react';
 import { BackingTrack } from '../types/types';
 import { useGetHighlightedArtistsQuery, useGetArtistTracksQuery, useLazyDownloadTrackQuery } from "@/services/api";
-import { toast } from "sonner";
+import { toast } from 'react-toastify';
 import { Audiowide, Inter } from 'next/font/google'
 const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
 const inter = Inter({ subsets: ['latin'], weight: ['400', '600', '700', '900'] })

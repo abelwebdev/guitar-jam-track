@@ -15,24 +15,24 @@ const getArtistName = (artist: BackingTrack['artist']): string => {
 };
 
 // Favorite Track Row Component (matching /home/tracks style)
-const FavoriteTrackRow: React.FC<{ 
-  track: BackingTrack, 
-  isPlaying: boolean, 
+const FavoriteTrackRow: React.FC<{
+  track: BackingTrack,
+  isPlaying: boolean,
   onPlay: (track: BackingTrack) => void,
   onRemoveFromFavorites: (track: BackingTrack) => void
 }> = ({ track, isPlaying, onPlay, onRemoveFromFavorites }) => (
   <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
-    <div 
-      onClick={() => onPlay(track)} 
+    <div
+      onClick={() => onPlay(track)}
       className="flex items-center space-x-4 flex-1 cursor-pointer"
     >
       <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
-        <Image 
-          src={'/background-placeholder.jpg'} 
+        <Image
+          src={'/background-placeholder.jpg'}
           alt={track.track_title || track.title || 'Track'}
           width={48}
           height={48}
-          className="w-full h-full object-cover" 
+          className="w-full h-full object-cover"
         />
         <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
           {isPlaying ? <Pause size={16} fill="white" className="text-white" /> : <Play size={16} fill="white" className="text-white ml-0.5" />}
@@ -99,11 +99,11 @@ export default function FavoritesPage() {
   // Sync optimistic removals with server data
   React.useEffect(() => {
     if (optimisticRemovals.size === 0) return;
-    
+
     setOptimisticRemovals(prev => {
       const next = new Set(prev);
       let changed = false;
-      
+
       const serverIds = new Set(favoritesData.map(f => f.id.toString()));
       next.forEach(id => {
         if (!serverIds.has(id)) {
@@ -111,7 +111,7 @@ export default function FavoritesPage() {
           changed = true;
         }
       });
-      
+
       return changed ? next : prev;
     });
   }, [favoritesData, optimisticRemovals]);
@@ -129,14 +129,14 @@ export default function FavoritesPage() {
   // Handle remove from favorites
   const handleRemoveFromFavorites = async (track: BackingTrack) => {
     const trackIdStr = track.id.toString();
-    
+
     // Set optimistic removal
     setOptimisticRemovals(prev => {
       const next = new Set(prev);
       next.add(trackIdStr);
       return next;
     });
-    
+
     try {
       await removeFromFavorites({ trackId: Number(track.id) }).unwrap();
       // useEffect will handle clearing once server data updates
@@ -190,7 +190,7 @@ export default function FavoritesPage() {
             <FavoriteTrackRow
               key={track.id || index}
               track={track}
-              isPlaying={playerState.currentTrack?.id === track.id && playerState.isPlaying}
+              isPlaying={playerState.currentTrack?.id?.toString() === track.id?.toString() && playerState.isPlaying}
               onPlay={handlePreviewPlay}
               onRemoveFromFavorites={handleRemoveFromFavorites}
             />

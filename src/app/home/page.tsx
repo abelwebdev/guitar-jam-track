@@ -9,7 +9,7 @@ import { BackingTrack } from '@/types/types';
 import { usePlayer } from '@/contexts/PlayerContext';
 
 const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string | number; trend?: string; onClick?: () => void }> = ({ icon, label, value, trend, onClick }) => (
-  <div 
+  <div
     onClick={onClick}
     className={`bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 ${onClick ? 'cursor-pointer hover:scale-105 hover:shadow-xl' : ''} transition-all duration-300`}
   >
@@ -30,7 +30,7 @@ const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string |
 );
 
 const ArtistCard: React.FC<{ artist: { id: number; name: string | null; backing_tracks_count: number }; image: string | null; onClick: () => void }> = ({ artist, image, onClick }) => (
-  <div 
+  <div
     onClick={onClick}
     className="group relative rounded-3xl overflow-hidden bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-indigo-500/50 transition-all duration-500 text-left shadow-md cursor-pointer"
   >
@@ -41,6 +41,7 @@ const ArtistCard: React.FC<{ artist: { id: number; name: string | null; backing_
         fill
         className="object-cover transition-transform duration-300 group-hover:scale-105"
         priority={false}
+        unoptimized={!!image}
       />
     </div>
     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent p-6 flex flex-col justify-end">
@@ -55,7 +56,7 @@ const ArtistCard: React.FC<{ artist: { id: number; name: string | null; backing_
   </div>
 );
 
-const TrackRow: React.FC<{ track: BackingTrack }> = ({ track }) => {
+const TrackRow: React.FC<{ track: BackingTrack; image?: string | null }> = ({ track, image }) => {
   const { playerState, setPlayerState } = usePlayer();
   const isCurrentTrack = playerState.currentTrack?.id === track.id;
   const isPlaying = isCurrentTrack && playerState.isPlaying;
@@ -80,26 +81,25 @@ const TrackRow: React.FC<{ track: BackingTrack }> = ({ track }) => {
   };
 
   return (
-    <div 
+    <div
       onClick={handlePlay}
-      className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group ${
-        isCurrentTrack 
-          ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800' 
-          : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/40'
-      }`}
+      className={`flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer group ${isCurrentTrack
+        ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800'
+        : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/40'
+        }`}
     >
       <div className="flex items-center space-x-3 flex-1 min-w-0">
         <div className="w-10 h-10 rounded-lg overflow-hidden relative shrink-0">
-          <Image 
-            src="/background-placeholder.jpg" 
+          <Image
+            src={image || "/background-placeholder.jpg"}
             alt={track.track_title || track.title || 'Track'}
             width={40}
             height={40}
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover"
+            unoptimized={!!image}
           />
-          <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
-            isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          }`}>
+          <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}>
             {isPlaying ? (
               <Pause size={14} fill="white" className="text-white" />
             ) : (
@@ -108,9 +108,8 @@ const TrackRow: React.FC<{ track: BackingTrack }> = ({ track }) => {
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <h5 className={`text-sm font-bold truncate ${
-            isCurrentTrack ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'
-          }`}>
+          <h5 className={`text-sm font-bold truncate ${isCurrentTrack ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'
+            }`}>
             {track.track_title || track.title || 'Unknown Track'}
           </h5>
           <p className="text-xs text-zinc-500 truncate">{getArtistName(track.artist)}</p>
@@ -130,7 +129,7 @@ const TrackRow: React.FC<{ track: BackingTrack }> = ({ track }) => {
 
 export default function Home() {
   const router = useRouter();
-  
+
   // Fetch data
   const { data: highlightedArtists = [], isLoading: highlightedartistsLoading } = useGetHighlightedArtistsQuery();
   const { data: allArtists = [] } = useGetAllArtistsQuery();
@@ -174,7 +173,7 @@ export default function Home() {
         fetchedIdsRef.current.add(artistId);
       }
     };
-    
+
     highlightedArtists.forEach((a) => fetchImageFor(a.id, a.name ?? null));
   }, [highlightedArtists]);
 
@@ -202,27 +201,27 @@ export default function Home() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <StatCard 
-          icon={<Music2 size={24} />} 
-          label="Tracks" 
+        <StatCard
+          icon={<Music2 size={24} />}
+          label="Tracks"
           value={allTracks.length}
           onClick={() => router.push('/home/tracks')}
         />
-        <StatCard 
-          icon={<Users size={24} />} 
-          label="Artists" 
+        <StatCard
+          icon={<Users size={24} />}
+          label="Artists"
           value={allArtists.length}
           onClick={() => router.push('/home/artists')}
         />
-        <StatCard 
-          icon={<Heart size={24} />} 
-          label="Favorites" 
+        <StatCard
+          icon={<Heart size={24} />}
+          label="Favorites"
           value={favorites.length}
           onClick={() => router.push('/home/favorites')}
         />
-        <StatCard 
-          icon={<ListMusic size={24} />} 
-          label="Playlists" 
+        <StatCard
+          icon={<ListMusic size={24} />}
+          label="Playlists"
           value={playlists.length}
           onClick={() => router.push('/home/playlists')}
         />
@@ -235,14 +234,14 @@ export default function Home() {
             <>
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-3xl mt-5 font-black text-zinc-900 dark:text-white">Featured Artists</h1>
-                <button 
+                <button
                   onClick={() => router.push('/home/artists')}
                   className="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
                 >
                   View All
                 </button>
               </div>
-              
+
               {highlightedartistsLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {[...Array(4)].map((_, i) => (
@@ -261,8 +260,8 @@ export default function Home() {
                     {visibleArtists.map((artist) => {
                       const artistImage = artistImages[artist.id] || null;
                       return (
-                        <ArtistCard 
-                          key={artist.id} 
+                        <ArtistCard
+                          key={artist.id}
                           artist={artist}
                           image={artistImage}
                           onClick={() => setSelectedArtistId(artist.id)}
@@ -283,7 +282,7 @@ export default function Home() {
                         <ChevronRight size={14} className="rotate-180 sm:mr-2" />
                         <span className="hidden sm:inline">Previous</span>
                       </button>
-                      
+
                       <div className="flex items-center space-x-1 sm:space-x-2">
                         {Array.from({ length: Math.min(3, totalArtistPages) }, (_, i) => {
                           let pageNum;
@@ -296,22 +295,21 @@ export default function Home() {
                           } else {
                             pageNum = currentArtistPage - 1 + i;
                           }
-                          
+
                           return (
                             <button
                               key={pageNum}
                               onClick={() => setArtistPage(pageNum)}
-                              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 hover:scale-110 ${
-                                currentArtistPage === pageNum
-                                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
-                              }`}
+                              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 hover:scale-110 ${currentArtistPage === pageNum
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
                             >
                               {pageNum}
                             </button>
                           );
                         })}
-                        
+
                         {/* Show additional pages on larger screens */}
                         <div className="hidden sm:flex items-center space-x-2">
                           {totalArtistPages > 3 && Array.from({ length: Math.min(2, totalArtistPages - 3) }, (_, i) => {
@@ -323,18 +321,17 @@ export default function Home() {
                             } else {
                               pageNum = currentArtistPage + 2 + i;
                             }
-                            
+
                             if (pageNum > totalArtistPages) return null;
-                            
+
                             return (
                               <button
                                 key={pageNum}
                                 onClick={() => setArtistPage(pageNum)}
-                                className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${
-                                  currentArtistPage === pageNum
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                                    : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
-                                }`}
+                                className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${currentArtistPage === pageNum
+                                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                  }`}
                               >
                                 {pageNum}
                               </button>
@@ -342,7 +339,7 @@ export default function Home() {
                           })}
                         </div>
                       </div>
-                      
+
                       <button
                         type="button"
                         onClick={handleArtistNext}
@@ -354,7 +351,7 @@ export default function Home() {
                       </button>
                     </div>
                   )}
-                  
+
                   {/* Page info */}
                   {highlightedArtists.length > 0 && (
                     <div className="mt-6 text-center">
@@ -373,7 +370,7 @@ export default function Home() {
             </>
           ) : (
             <div className="animate-in slide-in-from-right-4 duration-500">
-              <button 
+              <button
                 onClick={() => setSelectedArtistId(null)}
                 className="flex items-center space-x-2 text-zinc-500 hover:text-indigo-600 font-black uppercase text-xs tracking-widest transition-colors mb-12"
               >
@@ -407,7 +404,11 @@ export default function Home() {
               ) : artistTracks && artistTracks.length > 0 ? (
                 <div className="space-y-3">
                   {artistTracks.slice(0, 12).map((track) => (
-                    <TrackRow key={track.id} track={track} />
+                    <TrackRow
+                      key={track.id}
+                      track={track}
+                      image={selectedArtistId ? artistImages[selectedArtistId] : null}
+                    />
                   ))}
                 </div>
               ) : (

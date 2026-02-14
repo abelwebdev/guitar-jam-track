@@ -6,7 +6,7 @@ import Image from "next/image";
 import { BackingTrack } from '@/types/types';
 import { useGetAllTracksQuery, useGetPlaylistQuery, useAddTrackToPlaylistMutation, useCreatePlaylistMutation, useGetFavoritesQuery, useAddToFavoritesMutation, useRemoveFromFavoritesMutation } from '@/services/api';
 import { usePlayer } from '@/contexts/PlayerContext';
-import { toast } from 'sonner';
+import { toast } from 'react-toastify';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -29,6 +29,7 @@ const AddToPlaylistModal: React.FC<{
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [addedToPlaylists, setAddedToPlaylists] = useState<Set<number>>(new Set());
+  const [addingToId, setAddingToId] = useState<number | null>(null);
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -36,6 +37,7 @@ const AddToPlaylistModal: React.FC<{
       setShowCreateForm(false);
       setNewPlaylistName('');
       setAddedToPlaylists(new Set());
+      setAddingToId(null);
     }
   }, [isOpen]);
 
@@ -54,16 +56,14 @@ const AddToPlaylistModal: React.FC<{
   }, [isOpen, onClose]);
 
   const handleAddToPlaylist = async (playlistId: number) => {
-    setAddedToPlaylists(prev => new Set([...prev, playlistId]));
+    setAddingToId(playlistId);
     try {
       await onAddToPlaylist(playlistId);
+      setAddedToPlaylists(prev => new Set([...prev, playlistId]));
     } catch (error) {
-      // Revert if failed
-      setAddedToPlaylists(prev => {
-        const next = new Set(prev);
-        next.delete(playlistId);
-        return next;
-      });
+      // Error handled by parent toast
+    } finally {
+      setAddingToId(null);
     }
   };
 
@@ -103,18 +103,16 @@ const AddToPlaylistModal: React.FC<{
                 key={playlist.id}
                 onClick={() => handleAddToPlaylist(playlist.id)}
                 disabled={addedToPlaylists.has(playlist.id) || isLoading}
-                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${
-                  addedToPlaylists.has(playlist.id)
-                    ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
-                    : 'border-zinc-200 dark:border-zinc-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-zinc-50 dark:hover:bg-zinc-800'
-                }`}
+                className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all text-left ${addedToPlaylists.has(playlist.id)
+                  ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
+                  : 'border-zinc-200 dark:border-zinc-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                  }`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    addedToPlaylists.has(playlist.id)
-                      ? 'bg-green-100 dark:bg-green-900/30'
-                      : 'bg-indigo-100 dark:bg-indigo-900/30'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${addedToPlaylists.has(playlist.id)
+                    ? 'bg-green-100 dark:bg-green-900/30'
+                    : 'bg-indigo-100 dark:bg-indigo-900/30'
+                    }`}>
                     {addedToPlaylists.has(playlist.id) ? (
                       <Check size={16} className="text-green-600 dark:text-green-400" />
                     ) : (
@@ -130,11 +128,15 @@ const AddToPlaylistModal: React.FC<{
                     </p>
                   </div>
                 </div>
-                {addedToPlaylists.has(playlist.id) && (
+                {addedToPlaylists.has(playlist.id) ? (
                   <span className="text-xs font-medium text-green-600 dark:text-green-400">
                     Added
                   </span>
-                )}
+                ) : addingToId === playlist.id ? (
+                  <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 animate-pulse">
+                    Adding...
+                  </span>
+                ) : null}
               </button>
             ))
           ) : (
@@ -195,8 +197,8 @@ const getArtistName = (artist: BackingTrack['artist']): string => {
 };
 
 const TrackPreviewRow: React.FC<{
-  track: BackingTrack, 
-  isPlaying: boolean, 
+  track: BackingTrack,
+  isPlaying: boolean,
   onPlay: (track: BackingTrack) => void,
   onAddToPlaylist: (track: BackingTrack) => void,
   onToggleFavorite: (track: BackingTrack) => void,
@@ -217,17 +219,17 @@ const TrackPreviewRow: React.FC<{
 
   return (
     <div className={`flex items-center justify-between p-3 sm:p-4 rounded-2xl border transition-all group ${isPlaying ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-800 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 hover:bg-zinc-100 dark:hover:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700'}`}>
-      <div 
-        onClick={() => onPlay(track)} 
+      <div
+        onClick={() => onPlay(track)}
         className="flex items-center space-x-3 sm:space-x-4 flex-1 cursor-pointer min-w-0"
       >
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden relative group/play shrink-0">
-          <Image 
-            src={track.coverUrl || '/background-placeholder.jpg'} 
+          <Image
+            src={track.coverUrl || '/background-placeholder.jpg'}
             alt={trackTitle}
             width={48}
             height={48}
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover"
           />
           <div className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/play:opacity-100'}`}>
             {isPlaying ? <Pause size={14} fill="white" className="text-white sm:w-4 sm:h-4" /> : <Play size={14} fill="white" className="text-white ml-0.5 sm:w-4 sm:h-4" />}
@@ -235,7 +237,7 @@ const TrackPreviewRow: React.FC<{
         </div>
         <div className="text-left min-w-0 flex-1">
           <div ref={containerRef} className="overflow-hidden relative">
-            <h4 
+            <h4
               ref={titleRef}
               className={`text-xs sm:text-sm font-bold mb-0.5 whitespace-nowrap inline-block ${isPlaying ? 'text-indigo-600 dark:text-indigo-400' : 'text-zinc-900 dark:text-white'} ${shouldAnimate && isPlaying ? 'animate-marquee' : shouldAnimate ? 'group-hover:animate-marquee' : ''}`}
             >
@@ -254,11 +256,10 @@ const TrackPreviewRow: React.FC<{
             e.stopPropagation();
             onToggleFavorite(track);
           }}
-          className={`opacity-0 group-hover:opacity-100 p-1.5 sm:p-2 rounded-lg transition-all ${
-            isFavorite 
-              ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20' 
-              : 'text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-          } ${isFavorite ? 'opacity-100' : ''}`}
+          className={`opacity-0 group-hover:opacity-100 p-1.5 sm:p-2 rounded-lg transition-all ${isFavorite
+            ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+            : 'text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+            } ${isFavorite ? 'opacity-100' : ''}`}
           title={isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
           <Heart size={14} className="sm:w-4 sm:h-4" fill={isFavorite ? "currentColor" : "none"} />
@@ -330,7 +331,7 @@ export default function TracksPage() {
   // Sync optimistic favorites with server data
   useEffect(() => {
     if (Object.keys(optimisticFavorites).length === 0) return;
-    
+
     setOptimisticFavorites(prev => {
       const next = { ...prev };
       let changed = false;
@@ -347,8 +348,8 @@ export default function TracksPage() {
   const filteredTracks = useMemo(() => {
     return tracks.filter(t => {
       const artist = getArtistName(t.artist);
-      const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           artist.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        artist.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSearch;
     });
   }, [tracks, searchQuery]);
@@ -389,12 +390,13 @@ export default function TracksPage() {
   // Handle adding track to existing playlist
   const handleAddTrackToExistingPlaylist = async (playlistId: number) => {
     if (!selectedTrack) return;
-    
+
     try {
       await addTrackToPlaylist({
         playlistId,
         trackId: Number(selectedTrack.id)
       }).unwrap();
+      toast.success('Track added to playlist')
       refetchPlaylists();
     } catch (error: any) {
       console.error('Failed to add track to playlist:', error);
@@ -409,7 +411,7 @@ export default function TracksPage() {
   // Handle creating new playlist and adding track
   const handleCreatePlaylistWithTrack = async (name: string) => {
     if (!selectedTrack) return;
-    
+
     try {
       const newPlaylist = await createPlaylist({ name }).unwrap();
       await addTrackToPlaylist({
@@ -434,13 +436,13 @@ export default function TracksPage() {
     const trackIdNum = Number(track.id);
     const currentlyFavorite = optimisticFavorites[trackIdStr] ?? favoriteTrackIds.has(trackIdStr);
     const newFavoriteStatus = !currentlyFavorite;
-    
+
     // Set optimistic state immediately
     setOptimisticFavorites(prev => ({
       ...prev,
       [trackIdStr]: newFavoriteStatus
     }));
-    
+
     try {
       if (currentlyFavorite) {
         await removeFromFavorites({ trackId: trackIdNum }).unwrap();
@@ -472,16 +474,16 @@ export default function TracksPage() {
           </div>
           <div className="relative w-full md:w-80 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 group-hover:text-indigo-500 transition-colors" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search tracks..." 
+            <input
+              type="text"
+              placeholder="Search tracks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl py-3 pl-12 pr-6 text-sm focus:outline-none focus:border-indigo-500 transition-all text-zinc-900 dark:text-white" 
+              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl py-3 pl-12 pr-6 text-sm focus:outline-none focus:border-indigo-500 transition-all text-zinc-900 dark:text-white"
             />
           </div>
         </div>
-        
+
         <div className="space-y-3">
           {tracksLoading ? (
             // Loading skeleton
@@ -505,10 +507,10 @@ export default function TracksPage() {
             ))
           ) : tracks.length > 0 ? (
             paginatedTracks.map((track, index) => (
-              <TrackPreviewRow 
-                key={track.id || index} 
-                track={track} 
-                isPlaying={playerState.currentTrack?.id === track.id && playerState.isPlaying}
+              <TrackPreviewRow
+                key={track.id || index}
+                track={track}
+                isPlaying={playerState.currentTrack?.id?.toString() === track.id?.toString() && playerState.isPlaying}
                 onPlay={handlePreviewPlay}
                 onAddToPlaylist={handleAddToPlaylist}
                 onToggleFavorite={handleToggleFavorite}
@@ -541,7 +543,7 @@ export default function TracksPage() {
                 <ChevronRight size={14} className="rotate-180 sm:mr-2" />
                 <span className="hidden sm:inline">Prev</span>
               </button>
-              
+
               <div className="flex items-center space-x-1 sm:space-x-2">
                 {/* Page numbers - responsive count */}
                 {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
@@ -559,17 +561,16 @@ export default function TracksPage() {
                     <button
                       key={pageNum}
                       onClick={() => handlePageClick(pageNum)}
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 hover:scale-110 ${
-                        validCurrentPage === pageNum
-                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                          : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
-                      }`}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 hover:scale-110 ${validCurrentPage === pageNum
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                        }`}
                     >
                       {pageNum}
                     </button>
                   );
                 })}
-                
+
                 {/* Show additional pages on larger screens */}
                 <div className="hidden sm:flex items-center space-x-2">
                   {totalPages > 3 && Array.from({ length: Math.min(2, totalPages - 3) }, (_, i) => {
@@ -582,18 +583,17 @@ export default function TracksPage() {
                     } else {
                       pageNum = validCurrentPage + 2 + i;
                     }
-                    
+
                     if (pageNum > totalPages) return null;
-                    
+
                     return (
                       <button
                         key={pageNum}
                         onClick={() => handlePageClick(pageNum)}
-                        className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${
-                          validCurrentPage === pageNum
-                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                            : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
-                        }`}
+                        className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${validCurrentPage === pageNum
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                          : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                          }`}
                       >
                         {pageNum}
                       </button>
@@ -601,7 +601,7 @@ export default function TracksPage() {
                   })}
                 </div>
               </div>
-              
+
               <button
                 type="button"
                 onClick={handleNextPage}
