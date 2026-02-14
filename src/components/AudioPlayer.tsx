@@ -351,6 +351,14 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             <span className="text-[9px] lg:text-[10px] font-black text-zinc-400 tabular-nums min-w-[30px] lg:min-w-[35px]">{formatTime(playerState.duration)}</span>
           </div>
         </div>
+        {/* Desktop Close Button */}
+        <button
+          onClick={handleClose}
+          className="hidden lg:block absolute top-1 right-4 p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:text-zinc-500 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-full transition-all duration-200 z-10 hover:scale-110 active:scale-95"
+          title="Close player (Esc)"
+        >
+          <X size={20} />
+        </button>
 
         {/* Main Content Area */}
         <div className={`${isMobileExpanded ? 'flex-col items-stretch' : 'flex-row items-center justify-between gap-2'} flex-1 flex lg:flex-row lg:items-center px-4 lg:px-8 py-2 lg:py-3 relative overflow-y-auto lg:overflow-visible no-scrollbar`}>
@@ -370,15 +378,6 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
             onClick={() => setIsMobileExpanded(!isMobileExpanded)}
           >
             {isMobileExpanded ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-          </button>
-
-          {/* Desktop Close Button */}
-          <button
-            onClick={handleClose}
-            className="hidden lg:block absolute top-1 right-4 p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:text-zinc-500 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-full transition-all duration-200 z-10 hover:scale-110 active:scale-95"
-            title="Close player (Esc)"
-          >
-            <X size={20} />
           </button>
 
           {/* Left: Track Info */}
@@ -609,6 +608,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               )}
             </button>
 
+            {/* Volume Control */}
             <div className="flex items-center space-x-2 lg:space-x-3 w-28 lg:w-48 xl:w-56 transition-all">
               <button
                 type="button"
