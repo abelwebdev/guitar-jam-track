@@ -141,8 +141,15 @@ export default function Home() {
   const [artistImages, setArtistImages] = useState<Record<number, string | null>>({});
   const fetchedIdsRef = useRef<Set<number>>(new Set());
   const [artistPage, setArtistPage] = useState(1);
+  const [tracksPage, setTracksPage] = useState(1);
   const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
   const artistsPerPage = 8;
+  const tracksPerPage = 10;
+
+  // Reset tracks page when artist changes
+  useEffect(() => {
+    setTracksPage(1);
+  }, [selectedArtistId]);
 
   // Fetch artist tracks when an artist is selected
   const { data: artistTracks = [], isLoading: isArtistTracksLoading } = useGetArtistTracksQuery(
@@ -186,6 +193,16 @@ export default function Home() {
 
   const handleArtistPrev = () => setArtistPage((p) => Math.max(1, p - 1));
   const handleArtistNext = () => setArtistPage((p) => Math.min(totalArtistPages, p + 1));
+
+  // Pagination for tracks
+  const totalTrackPages = Math.max(1, Math.ceil(artistTracks.length / tracksPerPage));
+  const currentTrackPage = Math.min(tracksPage, totalTrackPages);
+  const trackStart = (currentTrackPage - 1) * tracksPerPage;
+  const trackEnd = trackStart + tracksPerPage;
+  const visibleTracks = artistTracks.slice(trackStart, trackEnd);
+
+  const handleTrackPrev = () => setTracksPage((p) => Math.max(1, p - 1));
+  const handleTrackNext = () => setTracksPage((p) => Math.min(totalTrackPages, p + 1));
 
   return (
     <div className="pt-8 pb-24 px-6 md:px-12 animate-in fade-in duration-500">
@@ -402,15 +419,106 @@ export default function Home() {
                   ))}
                 </div>
               ) : artistTracks && artistTracks.length > 0 ? (
-                <div className="space-y-3">
-                  {artistTracks.slice(0, 12).map((track) => (
-                    <TrackRow
-                      key={track.id}
-                      track={track}
-                      image={selectedArtistId ? artistImages[selectedArtistId] : null}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="space-y-3">
+                    {visibleTracks.map((track) => (
+                      <TrackRow
+                        key={track.id}
+                        track={track}
+                        image={selectedArtistId ? artistImages[selectedArtistId] : null}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {totalTrackPages > 1 && (
+                    <div className="mt-8 flex items-center justify-center gap-2 sm:gap-4">
+                      <button
+                        type="button"
+                        onClick={handleTrackPrev}
+                        disabled={currentTrackPage === 1}
+                        className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                      >
+                        <ChevronRight size={14} className="rotate-180 sm:mr-2" />
+                        <span className="hidden sm:inline">Previous</span>
+                      </button>
+
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        {Array.from({ length: Math.min(3, totalTrackPages) }, (_, i) => {
+                          let pageNum;
+                          if (totalTrackPages <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentTrackPage <= 2) {
+                            pageNum = i + 1;
+                          } else if (currentTrackPage >= totalTrackPages - 1) {
+                            pageNum = totalTrackPages - 2 + i;
+                          } else {
+                            pageNum = currentTrackPage - 1 + i;
+                          }
+
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setTracksPage(pageNum)}
+                              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl text-xs sm:text-sm font-black transition-all duration-200 hover:scale-110 ${currentTrackPage === pageNum
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+
+                        {/* Show additional pages on larger screens */}
+                        <div className="hidden sm:flex items-center space-x-2">
+                          {totalTrackPages > 3 && Array.from({ length: Math.min(2, totalTrackPages - 3) }, (_, i) => {
+                            let pageNum;
+                            if (currentTrackPage <= 2) {
+                              pageNum = 4 + i;
+                            } else if (currentTrackPage >= totalTrackPages - 1) {
+                              return null;
+                            } else {
+                              pageNum = currentTrackPage + 2 + i;
+                            }
+
+                            if (pageNum > totalTrackPages) return null;
+
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setTracksPage(pageNum)}
+                                className={`w-10 h-10 rounded-xl text-sm font-black transition-all duration-200 hover:scale-110 ${currentTrackPage === pageNum
+                                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-white'
+                                  }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleTrackNext}
+                        disabled={currentTrackPage === totalTrackPages}
+                        className="inline-flex items-center px-3 sm:px-6 py-2 sm:py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 text-xs sm:text-sm font-black uppercase tracking-widest text-zinc-700 dark:text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 hover:scale-105 active:scale-95"
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <ChevronRight size={14} className="sm:ml-2" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Page info */}
+                  <div className="mt-6 text-center">
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                      Showing {trackStart + 1}-{Math.min(trackEnd, artistTracks.length)} of {artistTracks.length} tracks
+                    </p>
+                  </div>
+                </>
               ) : (
                 <div className="py-12 text-center text-zinc-400 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
                   <Music2 size={32} className="mx-auto mb-2 opacity-50" />
