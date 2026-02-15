@@ -1145,7 +1145,7 @@ export default function Header() {
               {/* Developer Credit */}
               <div className="flex items-center justify-center md:justify-end">
                 <p className="text-[10px] sm:text-xs text-zinc-400 dark:text-zinc-600 font-medium tracking-wide uppercase">
-                  Built By <a href="https://abelwebdev.netlify.app" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors font-bold underline underline-offset-4 decoration-indigo-500/30 hover:decoration-indigo-500">Me</a>
+                  Developed By <a href="https://abelwebdev.netlify.app" target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors font-bold underline underline-offset-4 decoration-indigo-500/30 hover:decoration-indigo-500">Me</a>
                 </p>
               </div>
             </div>

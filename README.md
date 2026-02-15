@@ -42,7 +42,7 @@ Welcome to **Guitar JamTrack** – a modern Next.js application designed for gui
 
 ### Authentication & Services
 - **Authentication:** [Firebase Auth](https://firebase.google.com/products/auth)
-- **External APIs:** [TheAudioDB](https://www.theaudiodb.com) (Artist images)
+- **External APIs:** [TheAudioDB](https://www.theaudiodb.com) (Artist images and Bio)
 
 ### Audio & Music
 - **Chord Library:** [@tombatossals/react-chords](https://www.npmjs.com/package/@tombatossals/react-chords)
@@ -93,6 +93,9 @@ Ensure you have the following installed:
     NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your-storage-bucket"
     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
     NEXT_PUBLIC_FIREBASE_APP_ID="your-app-id"
+    FIREBASE_ADMIN_PROJECT_ID=guitar-jamtrack
+    FIREBASE_ADMIN_CLIENT_EMAIL=your-admin-client-email
+    FIREBASE_ADMIN_PRIVATE_KEY=your-admin-private-key
     ```
 
 4. **Set up the database:**
@@ -133,4 +136,4 @@ All tools are built using native Web APIs:
 ## 🙏 Acknowledgments
 
 - Backing track data from [Guitar Backing Track](https://guitarbackingtrack.org)
-- Artist images from [TheAudioDB](https://www.theaudiodb.com)
+- Artist images and Bio from [TheAudioDB](https://www.theaudiodb.com)
