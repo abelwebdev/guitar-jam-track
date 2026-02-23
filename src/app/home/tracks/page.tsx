@@ -505,7 +505,7 @@ export default function TracksPage() {
                 </div>
               </div>
             ))
-          ) : tracks.length > 0 ? (
+          ) : totalTracks > 0 ? (
             paginatedTracks.map((track, index) => (
               <TrackPreviewRow
                 key={track.id || index}
@@ -616,10 +616,10 @@ export default function TracksPage() {
         )}
 
         {/* Track count info for single page or no pagination */}
-        {!tracksLoading && totalPages <= 1 && tracks.length > 0 && (
+        {!tracksLoading && totalPages <= 1 && totalTracks > 0 && (
           <div className="mt-8 text-center">
             <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-              {searchQuery.trim() ? `Found ${tracks.length} tracks` : `Showing ${tracks.length} tracks`}
+              {searchQuery.trim() ? `Found ${totalTracks} tracks` : `Showing ${totalTracks} tracks`}
             </p>
           </div>
         )}
