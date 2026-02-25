@@ -233,13 +233,13 @@ export const {
   useSessionLogoutMutation,
   useGetUserQuery,
   useDeleteUserMutation,
-  useUpdateUserMutation,
+  
   useGetHighlightedArtistsQuery,
   useGetAllTracksQuery, 
   useGetAllArtistsQuery, 
   useSearchTracksQuery, 
   useSearchArtistsQuery,
-  useGetSingleTrackQuery,
+  
   useGetArtistTracksQuery,
   useGetPlaylistQuery,
   useCreatePlaylistMutation,
@@ -248,7 +248,7 @@ export const {
   useGetPlaylistTracksQuery,
   useUpdatePlaylistMutation,
   useRemoveTracksFromPlaylistMutation,
-  useGetTracksByArtistQuery,
+  
   useGetFavoritesQuery,
   useAddToFavoritesMutation,
   useRemoveFromFavoritesMutation,

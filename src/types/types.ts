@@ -1,11 +1,11 @@
 
-export interface User {
+interface User {
   email: string;
   name: string;
   avatar?: string;
 }
 
-export type ViewState = 'landing' | 'auth' | 'dashboard';
+type ViewState = 'landing' | 'auth' | 'dashboard';
 
 export interface BackingTrack {
   id: number | string;
@@ -27,7 +27,7 @@ export interface BackingTrack {
   coverUrl?: string;
 }
 
-export interface Playlist {
+interface Playlist {
   id: string;
   name: string;
   description: string;
@@ -35,7 +35,7 @@ export interface Playlist {
   createdAt: number;
 }
 
-export interface TheoryInsight {
+interface TheoryInsight {
   recommendedScales: string[];
   chordProgression: string;
   playingTips: string;

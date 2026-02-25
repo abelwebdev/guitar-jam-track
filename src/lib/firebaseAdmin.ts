@@ -17,7 +17,7 @@ if (!admin.apps.length) {
 
 export const adminAuth = admin.auth();
 
-export const verifyIdToken = async (idToken: string) => {
+const verifyIdToken = async (idToken: string) => {
   try {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     return decodedToken;
