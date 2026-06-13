@@ -16,24 +16,17 @@ export async function POST(req: Request) {
     // fetch full user record
     const userRecord = await adminAuth.getUser(uid);
     const email = userRecord.email ?? "";
-    const img = userRecord.photoURL ?? "";
-    // Use username passed from client first, then Firebase displayName, then fallback to email prefix
-    const username = usernameFromClient?.trim() || userRecord.displayName || email.split("@")[0];
     // Create user only once in DB
-    let dbUser = await prisma.users.findUnique({
-      where: { firebase_user_id: uid },
+    const dbUser = await prisma.users.upsert({
+      where: { email },           // unique field used as the conflict key
+      update: {
+        firebase_user_id: uid,    // keep firebase_user_id fresh if it ever changes
+      },
+      create: {
+        firebase_user_id: uid,
+        email,
+      },
     });
-    if (!dbUser) {
-      // Create new user
-      dbUser = await prisma.users.create({
-        data: {
-          firebase_user_id: uid,
-          email,
-          username,
-          img,
-        },
-      });
-    }
     // create Firebase session cookie
     const expiresIn = 60 * 60 * 24 * 14 * 1000;
     const sessionCookie = await adminAuth.createSessionCookie(idToken, {
