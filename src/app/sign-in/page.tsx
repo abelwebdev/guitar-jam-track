@@ -171,6 +171,7 @@ export default function Page() {
           break;
         default:
           toast.error(isLogin ? "Sign in failed" : "Sign up failed");
+          console.log("error: ", error)
       }
     } finally {
       setLoading(false);
@@ -202,6 +203,7 @@ export default function Page() {
         );
       } else {
         toast.error("Google sign in failed");
+        console.log("error: ", error);
       }
     } finally {
       setLoading(false);
