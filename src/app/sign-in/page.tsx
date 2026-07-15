@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Lock, User, Menu, X  } from 'lucide-react';
-import { useRouter } from "next/navigation";
 import { toast } from 'react-toastify';
 import { auth, googleProvider } from "@/lib/firebaseClient";
 import { signInWithEmailAndPassword, signInWithPopup, getIdToken, updateProfile, sendPasswordResetEmail, createUserWithEmailAndPassword, sendEmailVerification, fetchSignInMethodsForEmail } from "firebase/auth";
@@ -14,7 +13,6 @@ import { Audiowide } from 'next/font/google';
 const audiowide = Audiowide({ subsets: ['latin'], weight: '400' });
 
 export default function Page() {
-  const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', password: '', name: '' });
   const [loading, setLoading] = useState(false);
@@ -30,14 +28,41 @@ export default function Page() {
   const isLoadingRef = useRef(false);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    let isCancelled = false;
+
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user && user.emailVerified && !isLoadingRef.current) {
-        router.push("/home");
+        isLoadingRef.current = true;
+
+        try {
+          const idToken = await getIdToken(user, true);
+          const username = user.displayName ?? user.email?.split("@")[0];
+          await sessionLogin({ idToken, username }).unwrap();
+
+          if (!isCancelled) {
+            window.location.assign("/home");
+          }
+        } catch (error) {
+          console.error("Session restore failed:", error);
+          isLoadingRef.current = false;
+
+          if (!isCancelled) {
+            setCheckingAuth(false);
+          }
+        }
+        return;
       }
-      setCheckingAuth(false);
+
+      if (!isCancelled) {
+        setCheckingAuth(false);
+      }
     });
-    return () => unsubscribe();
-  }, [router]);
+
+    return () => {
+      isCancelled = true;
+      unsubscribe();
+    };
+  }, [sessionLogin]);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,8 +96,7 @@ export default function Page() {
         toast.success("Welcome back!");
         const idToken = await getIdToken(user, true);
         await sessionLogin({ idToken, username }).unwrap();
-        router.refresh();
-        router.push("/home");
+        window.location.assign("/home");
       } else {
         if (!formData.name.trim()) {
           toast.error("Name required");
@@ -188,9 +212,9 @@ export default function Page() {
       const user = userCredential.user;
       toast.success("Welcome!");
       const idToken = await getIdToken(user, true);
-      await sessionLogin({ idToken }).unwrap();
-      router.refresh();
-      router.push("/home");
+      const username = user.displayName ?? user.email?.split("@")[0];
+      await sessionLogin({ idToken, username }).unwrap();
+      window.location.assign("/home");
     } catch (error: any) {
       if (error.code === "auth/popup-closed-by-user") {
         toast.info("Sign in cancelled");

@@ -56,11 +56,12 @@ export const api = createApi({
   reducerPath: "guitarjamtrackapi",
   baseQuery: fetchBaseQuery({ baseUrl: "/api"}),
   endpoints: (builder) => ({
-    sessionLogin: builder.mutation<{ status: string }, { idToken: string; username?: string } >({
-      query: ({ idToken }) => ({
+    sessionLogin: builder.mutation<{ success: boolean }, { idToken: string; username?: string } >({
+      query: ({ idToken, username }) => ({
         url: "/session",
         method: "POST",
-        body: { idToken },
+        body: { idToken, username },
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
