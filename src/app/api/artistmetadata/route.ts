@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cache } from "react";
 
 type ArtistInput = {
   id: number;
@@ -15,9 +16,10 @@ const fallbackMetadata: ArtistMetadata = {
   bio: null,
 };
 
-const fetchArtistMetadata = async (name: string): Promise<ArtistMetadata> => {
+const fetchArtistMetadata = cache(async (name: string): Promise<ArtistMetadata> => {
+  const formattedName = name.trim();
   const res = await fetch(
-    `https://www.theaudiodb.com/api/v1/json/123/search.php?s=${encodeURIComponent(name)}`,
+    `https://www.theaudiodb.com/api/v1/json/123/search.php?s=${encodeURIComponent(formattedName)}`,
     { next: { revalidate: 60 * 60 * 24 * 7 } }
   );
 
@@ -30,28 +32,62 @@ const fetchArtistMetadata = async (name: string): Promise<ArtistMetadata> => {
     image: artist?.strArtistThumb ?? null,
     bio: artist?.strBiographyEN ?? null,
   };
+});
+
+const fetchMetadataForArtists = async (
+  artists: ArtistInput[]
+): Promise<Record<number, ArtistMetadata>> => {
+  const byNameKey = new Map<string, { displayName: string; ids: number[] }>();
+
+  for (const artist of artists) {
+    const displayName = artist.name!.trim();
+    const key = displayName.toLowerCase();
+    const group = byNameKey.get(key);
+    if (group) {
+      group.ids.push(artist.id);
+    } else {
+      byNameKey.set(key, { displayName, ids: [artist.id] });
+    }
+  }
+
+  const metadataByKey = new Map<string, ArtistMetadata>();
+  await Promise.all(
+    [...byNameKey.entries()].map(async ([key, { displayName }]) => {
+      try {
+        metadataByKey.set(key, await fetchArtistMetadata(displayName));
+      } catch {
+        metadataByKey.set(key, fallbackMetadata);
+      }
+    })
+  );
+
+  const result: Record<number, ArtistMetadata> = {};
+  for (const [key, { ids }] of byNameKey) {
+    const metadata = metadataByKey.get(key) ?? fallbackMetadata;
+    for (const id of ids) {
+      result[id] = metadata;
+    }
+  }
+  return result;
 };
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const artists = Array.isArray(body?.artists) ? body.artists : [];
+    const seenIds = new Set<number>();
     const uniqueArtists = artists
       .filter((artist: ArtistInput) => Number.isInteger(artist?.id) && artist.name?.trim())
+      .filter((artist: ArtistInput) => {
+        if (seenIds.has(artist.id)) return false;
+        seenIds.add(artist.id);
+        return true;
+      })
       .slice(0, 12);
 
-    const entries = await Promise.all(
-      uniqueArtists.map(async (artist: ArtistInput) => {
-        try {
-          const metadata = await fetchArtistMetadata(artist.name!.trim());
-          return [artist.id, metadata] as const;
-        } catch {
-          return [artist.id, fallbackMetadata] as const;
-        }
-      })
-    );
+    const metadataByArtistId = await fetchMetadataForArtists(uniqueArtists);
 
-    const response = NextResponse.json(Object.fromEntries(entries));
+    const response = NextResponse.json(metadataByArtistId);
     response.headers.set("Cache-Control", "public, s-maxage=604800, stale-while-revalidate=86400");
     return response;
   } catch (error) {

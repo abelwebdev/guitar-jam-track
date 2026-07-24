@@ -6,7 +6,7 @@ import {
   Play, ChevronRight, ArrowLeft, Pause, Search, Plus, Check, FolderPlus, X, Heart
 } from 'lucide-react';
 import { BackingTrack } from '../../../types/types';
-import { useGetAllArtistsQuery, useGetArtistTracksQuery, useSearchArtistsQuery, useGetPlaylistQuery, useAddTrackToPlaylistMutation, useCreatePlaylistMutation, useGetFavoritesQuery, useAddToFavoritesMutation, useRemoveFromFavoritesMutation } from "@/services/api";
+import { useGetAllArtistsQuery, useGetArtistTracksQuery, useSearchArtistsQuery, useGetArtistMetadataQuery, useGetPlaylistQuery, useAddTrackToPlaylistMutation, useCreatePlaylistMutation, useGetFavoritesQuery, useAddToFavoritesMutation, useRemoveFromFavoritesMutation } from "@/services/api";
 import { usePlayer } from "@/contexts/PlayerContext";
 import { toast } from 'react-toastify';
 
@@ -391,6 +391,9 @@ export default function Artists() {
   const startIndex = (validCurrentPage - 1) * artistsPerPage;
   const endIndex = startIndex + artistsPerPage;
   const paginatedArtists = allArtistsData?.slice(startIndex, endIndex) || [];
+  const { data: visibleArtistMetadata } = useGetArtistMetadataQuery(paginatedArtists, {
+    skip: paginatedArtists.length === 0,
+  });
 
   // Find selected artist
   const selectedArtist = allArtistsData?.find(artist => artist.id === selectedArtistId);
@@ -435,9 +438,6 @@ export default function Artists() {
   const handleArtistTracksNextPage = () => setArtistTracksPage(prev => Math.min(totalArtistTracksPages, prev + 1));
   const handleArtistTracksPageClick = (page: number) => setArtistTracksPage(page);
 
-  // Track fetched artist IDs to avoid duplicate requests
-  const fetchedIdsRef = useRef<Set<number>>(new Set());
-
   // Reset pagination when search query changes
   useEffect(() => setCurrentPage(1), [searchQuery]);
 
@@ -452,36 +452,25 @@ export default function Artists() {
     return () => clearTimeout(timer);
   }, [artistSearch]);
 
-  // Fetch artist images and bios
   useEffect(() => {
-    const fetchImageFor = async (artistId: number, name: string | null) => {
-      if (!name || fetchedIdsRef.current.has(artistId)) return;
-      try {
-        const formattedName = name.trim();
-        const res = await fetch(
-          `https://www.theaudiodb.com/api/v1/json/123/search.php?s=${encodeURIComponent(formattedName)}`
-        );
-        const data = await res.json();
-        const img = data?.artists && Array.isArray(data.artists)
-          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.webp"
-          : "/background-placeholder.webp";
-        const bio = data?.artists && Array.isArray(data.artists)
-          ? data.artists[0]?.strBiographyEN ?? null
-          : null;
+    if (!visibleArtistMetadata) return;
 
-        setArtistImages((prev) => ({ ...prev, [artistId]: img }));
-        setArtistBios((prev) => ({ ...prev, [artistId]: bio }));
-        fetchedIdsRef.current.add(artistId);
-      } catch {
-        setArtistImages((prev) => ({ ...prev, [artistId]: null }));
-        setArtistBios((prev) => ({ ...prev, [artistId]: null }));
-        fetchedIdsRef.current.add(artistId);
+    setArtistImages((prev) => {
+      const next = { ...prev };
+      for (const [artistId, metadata] of Object.entries(visibleArtistMetadata)) {
+        next[Number(artistId)] = metadata.image;
       }
-    };
+      return next;
+    });
 
-    // Fetch images for current page artists
-    paginatedArtists.forEach((artist) => fetchImageFor(artist.id, artist.name ?? null));
-  }, [paginatedArtists]);
+    setArtistBios((prev) => {
+      const next = { ...prev };
+      for (const [artistId, metadata] of Object.entries(visibleArtistMetadata)) {
+        next[Number(artistId)] = metadata.bio;
+      }
+      return next;
+    });
+  }, [visibleArtistMetadata]);
 
   // Handle track preview play using PlayerContext
   const handlePreviewPlay = (track: BackingTrack) => {

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Zap, ChevronRight, X, Hash, Grid, Gauge, ListMusic, Heart, Menu, Play, Pause, Volume2, VolumeX, Download, Loader2 } from 'lucide-react';
 import { BackingTrack } from '../types/types';
-import { useGetHighlightedArtistsQuery, useGetArtistTracksQuery, useLazyDownloadTrackQuery } from "@/services/api";
+import { useGetHighlightedArtistsQuery, useGetArtistTracksQuery, useGetArtistMetadataQuery, useLazyDownloadTrackQuery } from "@/services/api";
 import { toast } from 'react-toastify';
 import { Audiowide, Inter } from 'next/font/google'
 const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
@@ -84,7 +84,6 @@ export default function Header() {
     selectedArtistId?.toString() || '',
     { skip: !selectedArtistId }
   );
-  const fetchedIdsRef = useRef<Set<number>>(new Set());
   const safeArtists = artists ?? [];
   const safeTracks = artistTracks ?? [];
   
@@ -97,6 +96,9 @@ export default function Header() {
   const start = (currentPage - 1) * pageSize;
   const end = start + pageSize;
   const visible = safeArtists.slice(start, end);
+  const { data: visibleArtistMetadata } = useGetArtistMetadataQuery(visible, {
+    skip: visible.length === 0,
+  });
 
   // Track pagination
   const trackPageSize = 12;
@@ -262,26 +264,16 @@ export default function Header() {
   }, [isPlaying, previewTrack, volume]);
 
   useEffect(() => {
-    const fetchImageFor = async (artistId: number, name: string | null) => {
-      if (!name || fetchedIdsRef.current.has(artistId)) return;
-      try {
-        const formattedName = name.trim();
-        const res = await fetch(
-          `https://www.theaudiodb.com/api/v1/json/123/search.php?s=${encodeURIComponent(formattedName)}`
-        );
-        const data = await res.json();
-        const img = data?.artists && Array.isArray(data.artists)
-          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.webp"
-          : "/background-placeholder.webp";
-        setArtistImages((prev) => ({ ...prev, [artistId]: img }));
-        fetchedIdsRef.current.add(artistId);
-      } catch {
-        setArtistImages((prev) => ({ ...prev, [artistId]: null }));
-        fetchedIdsRef.current.add(artistId);
+    if (!visibleArtistMetadata) return;
+
+    setArtistImages((prev) => {
+      const next = { ...prev };
+      for (const [artistId, metadata] of Object.entries(visibleArtistMetadata)) {
+        next[Number(artistId)] = metadata.image;
       }
-    };
-    visible.forEach((a) => fetchImageFor(a.id, a.name ?? null));
-  }, [visible]);
+      return next;
+    });
+  }, [visibleArtistMetadata]);
 
   return (
     <>

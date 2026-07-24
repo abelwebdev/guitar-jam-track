@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Music2, Users, Heart, ListMusic, TrendingUp, ChevronRight, Play, Pause } from 'lucide-react';
 import Image from 'next/image';
-import { useGetHighlightedArtistsQuery, useGetAllTracksQuery, useGetFavoritesQuery, useGetPlaylistQuery, useGetAllArtistsQuery, useGetArtistTracksQuery } from '@/services/api';
+import { useGetHighlightedArtistsQuery, useGetAllTracksQuery, useGetFavoritesQuery, useGetPlaylistQuery, useGetAllArtistsQuery, useGetArtistTracksQuery, useGetArtistMetadataQuery } from '@/services/api';
 import { useRouter } from 'next/navigation';
 import { BackingTrack } from '@/types/types';
 import { usePlayer } from '@/contexts/PlayerContext';
@@ -139,7 +139,6 @@ export default function Home() {
 
   // Artist images state
   const [artistImages, setArtistImages] = useState<Record<number, string | null>>({});
-  const fetchedIdsRef = useRef<Set<number>>(new Set());
   const [artistPage, setArtistPage] = useState(1);
   const [tracksPage, setTracksPage] = useState(1);
   const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
@@ -160,36 +159,28 @@ export default function Home() {
   // Find selected artist
   const selectedArtist = highlightedArtists.find(artist => artist.id === selectedArtistId);
 
-  // Fetch artist images
-  useEffect(() => {
-    const fetchImageFor = async (artistId: number, name: string | null) => {
-      if (!name || fetchedIdsRef.current.has(artistId)) return;
-      try {
-        const formattedName = name.trim();
-        const res = await fetch(
-          `https://www.theaudiodb.com/api/v1/json/123/search.php?s=${encodeURIComponent(formattedName)}`
-        );
-        const data = await res.json();
-        const img = data?.artists && Array.isArray(data.artists)
-          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.webp"
-          : "/background-placeholder.webp";
-        setArtistImages((prev) => ({ ...prev, [artistId]: img }));
-        fetchedIdsRef.current.add(artistId);
-      } catch {
-        setArtistImages((prev) => ({ ...prev, [artistId]: null }));
-        fetchedIdsRef.current.add(artistId);
-      }
-    };
-
-    highlightedArtists.forEach((a) => fetchImageFor(a.id, a.name ?? null));
-  }, [highlightedArtists]);
-
   // Pagination for artists
   const totalArtistPages = Math.max(1, Math.ceil(highlightedArtists.length / artistsPerPage));
   const currentArtistPage = Math.min(artistPage, totalArtistPages);
   const artistStart = (currentArtistPage - 1) * artistsPerPage;
   const artistEnd = artistStart + artistsPerPage;
   const visibleArtists = highlightedArtists.slice(artistStart, artistEnd);
+
+  const { data: visibleArtistMetadata } = useGetArtistMetadataQuery(visibleArtists, {
+    skip: visibleArtists.length === 0,
+  });
+
+  useEffect(() => {
+    if (!visibleArtistMetadata) return;
+
+    setArtistImages((prev) => {
+      const next = { ...prev };
+      for (const [artistId, metadata] of Object.entries(visibleArtistMetadata)) {
+        next[Number(artistId)] = metadata.image;
+      }
+      return next;
+    });
+  }, [visibleArtistMetadata]);
 
   const handleArtistPrev = () => setArtistPage((p) => Math.max(1, p - 1));
   const handleArtistNext = () => setArtistPage((p) => Math.min(totalArtistPages, p + 1));
