@@ -6,6 +6,10 @@ type Artist = {
   backing_tracks_count: number;
   highlighted?: boolean | null;
 };
+type ArtistMetadata = {
+  image: string | null;
+  bio: string | null;
+};
 type BackingTrack = {
   title: string;
   id: number;
@@ -133,6 +137,17 @@ export const api = createApi({
     searchArtists: builder.query<Artist[], string>({
       query: (query) => `/search/artists?q=${encodeURIComponent(query)}`
     }),
+    getArtistMetadata: builder.query<Record<number, ArtistMetadata>, Artist[]>({
+      query: (artists) => ({
+        url: "/artistmetadata",
+        method: "POST",
+        body: {
+          artists: artists.map(({ id, name }) => ({ id, name })),
+        },
+      }),
+      serializeQueryArgs: ({ queryArgs }) =>
+        queryArgs.map(({ id, name }) => `${id}:${name ?? ""}`).join("|"),
+    }),
     getSingleTrack: builder.query<SingleTrack, string>({
       query: (id) => `/getsingletrack?id=${encodeURIComponent(id)}`
     }),
@@ -240,6 +255,7 @@ export const {
   useGetAllArtistsQuery, 
   useSearchTracksQuery, 
   useSearchArtistsQuery,
+  useGetArtistMetadataQuery,
   
   useGetArtistTracksQuery,
   useGetPlaylistQuery,
