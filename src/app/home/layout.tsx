@@ -13,7 +13,7 @@ import { useGetUserQuery, useDeleteUserMutation, useSessionLogoutMutation } from
 import { auth } from "@/lib/firebaseClient";
 import { onAuthStateChanged, getIdToken, sendPasswordResetEmail } from "firebase/auth";
 import AudioPlayer from "@/components/AudioPlayer";
-import { usePlayer } from "@/contexts/PlayerContext";
+import { PlayerProvider, usePlayer } from "@/contexts/PlayerContext";
 import { Audiowide } from 'next/font/google'
 const audiowide = Audiowide({ subsets: ['latin'], weight: '400' })
 
@@ -43,6 +43,14 @@ const SidebarItem: React.FC<SidebarItemProps> = ({ icon, label, active, onClick,
 );
 
 export default function HomeLayout({ children }: { children: ReactNode }) {
+  return (
+    <PlayerProvider>
+      <HomeLayoutContent>{children}</HomeLayoutContent>
+    </PlayerProvider>
+  );
+}
+
+function HomeLayoutContent({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);

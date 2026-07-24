@@ -84,7 +84,7 @@ const TrackPreviewRow: React.FC<{
     <div className="flex items-center space-x-4">
       <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
         <Image 
-          src={'/background-placeholder.jpg'} 
+          src={'/background-placeholder.webp'} 
           alt={track.track_title || track.title || 'Track'}
           width={48}
           height={48}
@@ -222,8 +222,8 @@ export default function ArtistsPage() {
         );
         const data = await res.json();
         const img = data?.artists && Array.isArray(data.artists)
-          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.jpg"
-          : "/background-placeholder.jpg";
+          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.webp"
+          : "/background-placeholder.webp";
         const bio = data?.artists && Array.isArray(data.artists)
           ? data.artists[0]?.strBiographyEN ?? null
           : null;
@@ -876,7 +876,7 @@ export default function ArtistsPage() {
            <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-[2.5rem] p-3 sm:p-4 shadow-2xl flex items-center gap-2 sm:gap-4 md:gap-6 group overflow-hidden">
               <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
                 <Image 
-                  src={'/background-placeholder.jpg'} 
+                  src={'/background-placeholder.webp'} 
                   alt={previewTrack.track_title || previewTrack.title || 'Track'}
                   width={64}
                   height={64}

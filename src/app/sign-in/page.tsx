@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Lock, User, Menu, X  } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { auth, googleProvider } from "@/lib/firebaseClient";
-import { signInWithEmailAndPassword, signInWithPopup, getIdToken, updateProfile, sendPasswordResetEmail, createUserWithEmailAndPassword, sendEmailVerification, fetchSignInMethodsForEmail } from "firebase/auth";
 import { useSessionLoginMutation } from "@/services/api";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,55 +10,83 @@ import { usePathname } from "next/navigation";
 import { Audiowide } from 'next/font/google';
 const audiowide = Audiowide({ subsets: ['latin'], weight: '400' });
 
+const loadFirebaseAuth = async () => {
+  const [{ auth, googleProvider }, firebaseAuth] = await Promise.all([
+    import("@/lib/firebaseClient"),
+    import("firebase/auth"),
+  ]);
+
+  return { auth, googleProvider, ...firebaseAuth };
+};
+
+const runWhenIdle = (callback: () => void) => {
+  if (typeof window.requestIdleCallback === 'function') {
+    const idleId = window.requestIdleCallback(callback, { timeout: 1500 });
+    return () => window.cancelIdleCallback(idleId);
+  }
+
+  const timeoutId = window.setTimeout(callback, 500);
+  return () => window.clearTimeout(timeoutId);
+};
+
 export default function Page() {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', password: '', name: '' });
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [sessionLogin] = useSessionLoginMutation();
-  const [isClient, setIsClient] = useState(false);
   const pathname = usePathname();  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   const isLoadingRef = useRef(false);
 
   useEffect(() => {
     let isCancelled = false;
+    let unsubscribe: (() => void) | undefined;
 
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user && user.emailVerified && !isLoadingRef.current) {
-        isLoadingRef.current = true;
+    const cancelIdle = runWhenIdle(() => {
+      loadFirebaseAuth().then(({ auth, getIdToken }) => {
+        if (isCancelled) return;
 
-        try {
-          const idToken = await getIdToken(user, true);
-          const username = user.displayName ?? user.email?.split("@")[0];
-          await sessionLogin({ idToken, username }).unwrap();
+        unsubscribe = auth.onAuthStateChanged(async (user) => {
+          if (user && user.emailVerified && !isLoadingRef.current) {
+            isLoadingRef.current = true;
 
-          if (!isCancelled) {
-            window.location.assign("/home");
+            try {
+              const idToken = await getIdToken(user, true);
+              const username = user.displayName ?? user.email?.split("@")[0];
+              await sessionLogin({ idToken, username }).unwrap();
+
+              if (!isCancelled) {
+                window.location.assign("/home");
+              }
+            } catch (error) {
+              console.error("Session restore failed:", error);
+              isLoadingRef.current = false;
+
+              if (!isCancelled) {
+                setCheckingAuth(false);
+              }
+            }
+            return;
           }
-        } catch (error) {
-          console.error("Session restore failed:", error);
-          isLoadingRef.current = false;
 
           if (!isCancelled) {
             setCheckingAuth(false);
           }
+        });
+      }).catch((error) => {
+        console.error("Auth initialization failed:", error);
+        if (!isCancelled) {
+          setCheckingAuth(false);
         }
-        return;
-      }
-
-      if (!isCancelled) {
-        setCheckingAuth(false);
-      }
+      });
     });
 
     return () => {
       isCancelled = true;
-      unsubscribe();
+      cancelIdle();
+      unsubscribe?.();
     };
   }, [sessionLogin]);
 
@@ -72,6 +98,16 @@ export default function Page() {
     setLoading(true);
     
     try {
+      const {
+        auth,
+        signInWithEmailAndPassword,
+        getIdToken,
+        updateProfile,
+        createUserWithEmailAndPassword,
+        sendEmailVerification,
+        fetchSignInMethodsForEmail,
+      } = await loadFirebaseAuth();
+
       if (isLogin) {
         const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
         const user = userCredential.user;
@@ -208,6 +244,7 @@ export default function Page() {
     isLoadingRef.current = true;
     setLoading(true);
     try {
+      const { auth, googleProvider, signInWithPopup, getIdToken } = await loadFirebaseAuth();
       const userCredential = await signInWithPopup(auth, googleProvider);
       const user = userCredential.user;
       toast.success("Welcome!");
@@ -245,6 +282,7 @@ export default function Page() {
     
     setLoading(true);
     try {
+      const { auth, sendPasswordResetEmail } = await loadFirebaseAuth();
       await sendPasswordResetEmail(auth, formData.email);
       toast.success(
         <div>

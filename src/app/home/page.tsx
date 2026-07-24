@@ -36,7 +36,7 @@ const ArtistCard: React.FC<{ artist: { id: number; name: string | null; backing_
   >
     <div className="aspect-[4/5] overflow-hidden relative">
       <Image
-        src={image || '/background-placeholder.jpg'}
+        src={image || '/background-placeholder.webp'}
         alt={artist.name ?? "Artist"}
         fill
         className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -91,7 +91,7 @@ const TrackRow: React.FC<{ track: BackingTrack; image?: string | null }> = ({ tr
       <div className="flex items-center space-x-3 flex-1 min-w-0">
         <div className="w-10 h-10 rounded-lg overflow-hidden relative shrink-0">
           <Image
-            src={image || "/background-placeholder.jpg"}
+            src={image || "/background-placeholder.webp"}
             alt={track.track_title || track.title || 'Track'}
             width={40}
             height={40}
@@ -171,8 +171,8 @@ export default function Home() {
         );
         const data = await res.json();
         const img = data?.artists && Array.isArray(data.artists)
-          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.jpg"
-          : "/background-placeholder.jpg";
+          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.webp"
+          : "/background-placeholder.webp";
         setArtistImages((prev) => ({ ...prev, [artistId]: img }));
         fetchedIdsRef.current.add(artistId);
       } catch {

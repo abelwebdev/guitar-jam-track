@@ -93,7 +93,7 @@ const TrackRow: React.FC<{
       >
         <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
           <Image
-            src={'/background-placeholder.jpg'}
+            src={'/background-placeholder.webp'}
             alt={track.track_title || track.title || 'Track'}
             width={48}
             height={48}
@@ -406,7 +406,7 @@ export default function PlaylistsPage() {
     const enhancedTrack = {
       ...track,
       title: track.track_title || track.title || 'Unknown Track',
-      coverUrl: '/background-placeholder.jpg'
+      coverUrl: '/background-placeholder.webp'
     };
     handlePlayTrack(enhancedTrack);
   };

@@ -161,12 +161,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
         );
         const data = await res.json();
         const img = data?.artists && Array.isArray(data.artists)
-          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.jpg"
-          : "/background-placeholder.jpg";
+          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.webp"
+          : "/background-placeholder.webp";
         setArtistImage(img);
       } catch (error) {
         console.error('Failed to fetch artist image:', error);
-        setArtistImage("/background-placeholder.jpg");
+        setArtistImage("/background-placeholder.webp");
       }
     };
 
@@ -175,7 +175,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       if (artistName && artistName !== 'Unknown Artist') {
         fetchArtistImage(artistName);
       } else {
-        setArtistImage("/background-placeholder.jpg");
+        setArtistImage("/background-placeholder.webp");
       }
     } else {
       setArtistImage(null);
@@ -391,7 +391,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               }}
             >
               <Image
-                src={artistImage || playerState.currentTrack?.coverUrl || '/background-placeholder.jpg'}
+                src={artistImage || playerState.currentTrack?.coverUrl || '/background-placeholder.webp'}
                 alt="Artist Image"
                 fill
                 className="object-cover"

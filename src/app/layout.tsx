@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ClientProviders } from "./ClientProviders";
-import { Bounce, ToastContainer, toast } from 'react-toastify';
+import { Bounce, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://guitar-jam-track.netlify.app"),
   title: "Guitar JamTrack - Professional Backing Tracks for Guitar Practice",
   description: "Search thousands of professional guitar backing tracks and practice smarter with our intelligent platform.",
   keywords: "guitar backing tracks, guitar practice, backing tracks, guitar learning, music practice, guitar jam tracks",
@@ -43,7 +44,11 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/site.webmanifest",
-  viewport: "width=device-width, initial-scale=1",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#000000" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },

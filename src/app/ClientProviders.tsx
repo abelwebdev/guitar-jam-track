@@ -1,22 +1,36 @@
 'use client';
 
 import { useEffect } from 'react';
-import posthog from 'posthog-js';
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Provider } from "react-redux";
 import { store } from "@/store";
-import { PlayerProvider } from "@/contexts/PlayerContext";
+
+const runWhenIdle = (callback: () => void) => {
+  if (typeof window.requestIdleCallback === 'function') {
+    const idleId = window.requestIdleCallback(callback, { timeout: 3000 });
+    return () => window.cancelIdleCallback(idleId);
+  }
+
+  const timeoutId = window.setTimeout(callback, 1500);
+  return () => window.clearTimeout(timeoutId);
+};
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN!, {
-      api_host: '/ingest',
-      ui_host: 'https://us.posthog.com',
-      capture_pageview: false,
-      loaded: (posthog) => {
-        console.log('PostHog loaded:', posthog);
-      },
+    const token = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
+    if (!token) return;
+
+    return runWhenIdle(() => {
+      import('posthog-js').then(({ default: posthog }) => {
+        if (posthog.__loaded) return;
+
+        posthog.init(token, {
+          api_host: '/ingest',
+          ui_host: 'https://us.posthog.com',
+          capture_pageview: false,
+        });
+      });
     });
   }, []);
 
@@ -28,9 +42,7 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <Provider store={store}>
-        <PlayerProvider>
-          {children}
-        </PlayerProvider>
+        {children}
       </Provider>
     </ThemeProvider>
   );

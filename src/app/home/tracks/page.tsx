@@ -225,7 +225,7 @@ const TrackPreviewRow: React.FC<{
       >
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden relative group/play shrink-0">
           <Image
-            src={track.coverUrl || '/background-placeholder.jpg'}
+            src={track.coverUrl || '/background-placeholder.webp'}
             alt={trackTitle}
             width={48}
             height={48}
@@ -319,7 +319,7 @@ export default function TracksPage() {
       id: track.id.toString(),
       title: track.track_title || track.title || 'Unknown Track',
       audioUrl: track.track_url || '',
-      coverUrl: '/background-placeholder.jpg'
+      coverUrl: '/background-placeholder.webp'
     }));
   }, [tracksData]);
 
@@ -376,7 +376,7 @@ export default function TracksPage() {
     const enhancedTrack = {
       ...track,
       title: track.track_title || track.title || 'Unknown Track',
-      coverUrl: '/background-placeholder.jpg'
+      coverUrl: '/background-placeholder.webp'
     };
     handlePlayTrack(enhancedTrack);
   };

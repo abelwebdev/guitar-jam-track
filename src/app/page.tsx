@@ -47,7 +47,7 @@ const ArtistCard: React.FC<{ id: number, name: string | null, trackCount: number
   >
     <div className="aspect-[4/5] overflow-hidden relative">
       <Image
-        src={image || '/background-placeholder.jpg'}
+        src={image || '/background-placeholder.webp'}
         alt={name ?? "Artist"}
         fill
         className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -271,8 +271,8 @@ export default function Header() {
         );
         const data = await res.json();
         const img = data?.artists && Array.isArray(data.artists)
-          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.jpg"
-          : "/background-placeholder.jpg";
+          ? data.artists[0]?.strArtistThumb ?? "/background-placeholder.webp"
+          : "/background-placeholder.webp";
         setArtistImages((prev) => ({ ...prev, [artistId]: img }));
         fetchedIdsRef.current.add(artistId);
       } catch {
@@ -966,7 +966,7 @@ export default function Header() {
                                   <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden relative shrink-0 bg-zinc-200 dark:bg-zinc-700 group/play">
                                       <Image 
-                                        src="/background-placeholder.jpg"
+                                        src="/background-placeholder.webp"
                                         alt={track.track_title || track.title || 'Track'}
                                         width={48}
                                         height={48}
@@ -1187,7 +1187,7 @@ export default function Header() {
               <div className="w-full flex items-center gap-2 sm:gap-4 md:gap-6">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
                   <Image 
-                    src={'/background-placeholder.jpg'} 
+                    src={'/background-placeholder.webp'} 
                     alt={previewTrack.track_title || previewTrack.title || 'Track'}
                     width={64}
                     height={64}

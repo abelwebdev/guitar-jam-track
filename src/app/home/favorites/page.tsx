@@ -28,7 +28,7 @@ const FavoriteTrackRow: React.FC<{
     >
       <div className="w-12 h-12 rounded-xl overflow-hidden relative group/play">
         <Image
-          src={'/background-placeholder.jpg'}
+          src={'/background-placeholder.webp'}
           alt={track.track_title || track.title || 'Track'}
           width={48}
           height={48}
@@ -92,7 +92,7 @@ export default function FavoritesPage() {
       id: track.id.toString(),
       title: track.track_title || track.title || 'Unknown Track',
       audioUrl: track.track_url || '',
-      coverUrl: '/background-placeholder.jpg'
+      coverUrl: '/background-placeholder.webp'
     })).filter(track => !optimisticRemovals.has(track.id.toString()));
   }, [favoritesData, optimisticRemovals]);
 
@@ -121,7 +121,7 @@ export default function FavoritesPage() {
     const enhancedTrack = {
       ...track,
       title: track.track_title || track.title || 'Unknown Track',
-      coverUrl: '/background-placeholder.jpg'
+      coverUrl: '/background-placeholder.webp'
     };
     handlePlayTrack(enhancedTrack);
   };
