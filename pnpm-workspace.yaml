@@ -1,0 +1,10 @@
+allowBuilds:
+  '@firebase/util': false
+  '@prisma/engines': false
+  '@sentry/cli': false
+  core-js: false
+  esbuild: true
+  msgpackr-extract: true
+  prisma: false
+  protobufjs: false
+  workerd: true
