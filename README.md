@@ -59,6 +59,7 @@ Ensure you have the following installed:
 - [Node.js](https://nodejs.org/) v18.0.0 or higher
 - [PostgreSQL](https://www.postgresql.org/) v14 or higher
 - [Git](https://git-scm.com/)
+- [pnpm](https://pnpm.io/) v10.0.0
 
 ### Installation
 
@@ -72,7 +73,7 @@ Ensure you have the following installed:
 2. **Install dependencies:**
 
     ```bash
-    npm install
+    pnpm install --frozen-lockfile
     ```
 
 3. **Set up environment variables:**
@@ -102,16 +103,16 @@ Ensure you have the following installed:
 
     ```bash
     # Generate Prisma Client
-    npx prisma generate
+    pnpm exec prisma generate
     
     # Run database migrations
-    npx prisma migrate dev
+    pnpm exec prisma migrate dev
     ```
 
 5. **Run the development server:**
 
     ```bash
-    npm run dev
+    pnpm dev
     ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser to see the app in action.
